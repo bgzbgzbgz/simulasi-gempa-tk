@@ -1,0 +1,54 @@
+# Unity standard .gitignore
+# Mengabaikan cache besar (Library 7GB+, Temp, BackUp folder)
+
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+
+# Asset Store tools
+/[Aa]ssets/[Aa]ssetStoreTools*
+
+# IDE & Editor cache / generated solution files
+.vs/
+.vscode/
+.gradle/
+*.csproj
+*.unityproj
+*.sln
+*.slnx
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity metadata generated on crash/temp
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+sysinfo.txt
+
+# Build Artifacts & Android Temp
+*.apk
+*.aab
+*.unitypackage
+*.app
+.utmp/
+*BurstDebugInformation_DoNotShip*
+*BackUpThisFolder_ButDontShipItWithYourGame*
+
+# OS generated
+.DS_Store
+Thumbs.db
+desktop.ini
