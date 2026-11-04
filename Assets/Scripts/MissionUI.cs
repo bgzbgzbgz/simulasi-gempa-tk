@@ -22,18 +22,17 @@ public class MissionUI : MonoBehaviour
     public GameObject finalScorePanel;
     public Text scoreTimeText;
     public Text scoreStarsText;
+    public Text scorePointsText;
     public Text scoreEvaluationText;
     public Button retryButton;
     public Button mainMenuButton;
 
     private void Awake()
     {
-        // Pastikan popup panel tertutup saat awal mulai
         if (levelCompletePanel != null) levelCompletePanel.SetActive(false);
         if (finalScorePanel != null) finalScorePanel.SetActive(false);
         if (holdProgressContainer != null) holdProgressContainer.SetActive(false);
 
-        // Pasang event listener tombol
         if (nextLevelButton != null)
         {
             nextLevelButton.onClick.AddListener(() =>
@@ -121,7 +120,7 @@ public class MissionUI : MonoBehaviour
         }
     }
 
-    public void ShowFinalScore(float totalTime, int stars, string evaluation)
+    public void ShowFinalScore(float totalTime, int stars, string evaluation, int score = 0)
     {
         if (finalScorePanel != null)
         {
@@ -133,6 +132,11 @@ public class MissionUI : MonoBehaviour
             int mins = Mathf.FloorToInt(totalTime / 60f);
             int secs = Mathf.FloorToInt(totalTime % 60f);
             scoreTimeText.text = $"Total Waktu: {mins:00}:{secs:00}";
+        }
+
+        if (scorePointsText != null)
+        {
+            scorePointsText.text = $"Total Poin: {score} Poin";
         }
 
         if (scoreStarsText != null)

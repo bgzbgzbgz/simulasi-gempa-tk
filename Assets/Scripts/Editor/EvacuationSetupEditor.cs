@@ -6,8 +6,8 @@ using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 /// <summary>
-/// Tool 1-Klik untuk membuat GameManager, Canvas HUD Misi, Popup Level Complete,
-/// dan Popup Skor Akhir secara otomatis di scene aktif.
+/// Tool 1-Klik untuk membuat GameManager, Canvas HUD Misi, Panel Kuis Level 1,
+/// Popup Level Complete, dan Popup Skor Akhir secara otomatis di scene aktif.
 /// </summary>
 public static class EvacuationSetupEditor
 {
@@ -147,7 +147,6 @@ public static class EvacuationSetupEditor
             labelText.color = new Color(0.4f, 1f, 0.5f);
             labelText.text = "TETAP BERLINDUNG...";
 
-            // Slider
             GameObject sliderObj = new GameObject("HoldSlider", typeof(RectTransform), typeof(Slider));
             sliderObj.transform.SetParent(holdObj.transform, false);
             RectTransform sliderRect = sliderObj.GetComponent<RectTransform>();
@@ -185,14 +184,47 @@ public static class EvacuationSetupEditor
             holdObj.SetActive(false);
         }
 
-        // 7. Buat Modal Popup Level Complete
+        // 7. Buat Panel Kuis Level 1 (3 Pilihan Bencana / Soal)
+        Level1QuizManager quizMgr = Object.FindFirstObjectByType<Level1QuizManager>();
+        Transform existingQuiz = missionUI.transform.Find("Panel_Level1_Quiz");
+        if (existingQuiz == null)
+        {
+            GameObject quizPanelObj = CreateModalPanel("Panel_Level1_Quiz", missionUI.transform);
+            quizMgr = quizPanelObj.AddComponent<Level1QuizManager>();
+
+            GameObject card = CreateCard("Card_Quiz", quizPanelObj.transform, new Vector2(980f, 520f));
+
+            Text qPrompt = CreateText("Question_Prompt", card.transform, "Soal 1/3:\nRumah manakah yang sedang terkena gempa bumi?", 26, FontStyle.Bold, new Color(1f, 0.9f, 0.3f), defaultFont, new Vector2(0f, 180f), new Vector2(900f, 80f));
+            quizMgr.promptText = qPrompt;
+            quizMgr.quizPanel = quizPanelObj;
+
+            // 3 Tombol Opsi Pilihan A, B, C
+            float[] xOffsets = new float[] { -300f, 0f, 300f };
+            string[] defaultLabels = new string[] { "Pilihan A\n(Kebakaran)", "Pilihan B\n(Gempa Bumi)", "Pilihan C\n(Tsunami)" };
+            Color[] cardColors = new Color[] { new Color(0.22f, 0.28f, 0.4f), new Color(0.22f, 0.28f, 0.4f), new Color(0.22f, 0.28f, 0.4f) };
+
+            for (int i = 0; i < 3; i++)
+            {
+                Button btn = CreateButton($"Btn_Option_{i}", card.transform, defaultLabels[i], cardColors[i], defaultFont, new Vector2(xOffsets[i], 10f), new Vector2(270f, 180f));
+                quizMgr.optionButtons[i] = btn;
+                quizMgr.optionTexts[i] = btn.GetComponentInChildren<Text>();
+                quizMgr.optionTexts[i].fontSize = 20;
+            }
+
+            Text feedback = CreateText("FeedbackText", card.transform, "", 22, FontStyle.Bold, Color.white, defaultFont, new Vector2(0f, -140f), new Vector2(800f, 50f));
+            quizMgr.feedbackText = feedback;
+
+            quizMgr.SetupDefaultQuestions();
+            gameManager.quizManager = quizMgr;
+        }
+
+        // 8. Buat Modal Popup Level Complete
         Transform existingComplete = missionUI.transform.Find("Popup_LevelComplete");
         if (existingComplete == null)
         {
             GameObject compObj = CreateModalPanel("Popup_LevelComplete", missionUI.transform);
             missionUI.levelCompletePanel = compObj;
 
-            // Card Panel
             GameObject card = CreateCard("Card", compObj.transform, new Vector2(600f, 320f));
 
             Text title = CreateText("Title", card.transform, "LEVEL SELESAI!", 32, FontStyle.Bold, new Color(0.3f, 0.9f, 0.5f), defaultFont, new Vector2(0f, 90f), new Vector2(500f, 60f));
@@ -207,37 +239,44 @@ public static class EvacuationSetupEditor
             compObj.SetActive(false);
         }
 
-        // 8. Buat Modal Popup Skor Akhir
+        // 9. Buat Modal Popup Skor Akhir
         Transform existingScore = missionUI.transform.Find("Popup_FinalScore");
         if (existingScore == null)
         {
             GameObject scoreObj = CreateModalPanel("Popup_FinalScore", missionUI.transform);
             missionUI.finalScorePanel = scoreObj;
 
-            GameObject card = CreateCard("Card", scoreObj.transform, new Vector2(650f, 420f));
+            GameObject card = CreateCard("Card", scoreObj.transform, new Vector2(650f, 440f));
 
-            CreateText("Title", card.transform, "SIMULASI SELESAI!", 32, FontStyle.Bold, new Color(1f, 0.85f, 0.2f), defaultFont, new Vector2(0f, 140f), new Vector2(500f, 50f));
+            CreateText("Title", card.transform, "SIMULASI SELESAI!", 32, FontStyle.Bold, new Color(1f, 0.85f, 0.2f), defaultFont, new Vector2(0f, 150f), new Vector2(500f, 50f));
 
-            Text stars = CreateText("Stars", card.transform, "★ ★ ★", 48, FontStyle.Bold, new Color(1f, 0.85f, 0.2f), defaultFont, new Vector2(0f, 75f), new Vector2(500f, 65f));
+            Text stars = CreateText("Stars", card.transform, "★ ★ ★", 48, FontStyle.Bold, new Color(1f, 0.85f, 0.2f), defaultFont, new Vector2(0f, 90f), new Vector2(500f, 65f));
             missionUI.scoreStarsText = stars;
 
-            Text time = CreateText("TimeText", card.transform, "Total Waktu: 00:45", 24, FontStyle.Bold, Color.white, defaultFont, new Vector2(0f, 15f), new Vector2(500f, 40f));
+            Text points = CreateText("PointsText", card.transform, "Total Poin: 50 Poin", 24, FontStyle.Bold, new Color(0.4f, 0.9f, 1f), defaultFont, new Vector2(0f, 35f), new Vector2(500f, 40f));
+            missionUI.scorePointsText = points;
+
+            Text time = CreateText("TimeText", card.transform, "Total Waktu: 00:45", 22, FontStyle.Normal, Color.white, defaultFont, new Vector2(0f, -10f), new Vector2(500f, 35f));
             missionUI.scoreTimeText = time;
 
-            Text eval = CreateText("EvalText", card.transform, "Luar Biasa! Respon evakuasi sangat cepat dan aman.", 19, FontStyle.Normal, new Color(0.85f, 0.85f, 0.9f), defaultFont, new Vector2(0f, -35f), new Vector2(520f, 50f));
+            Text eval = CreateText("EvalText", card.transform, "Luar Biasa! Kamu adalah Pahlawan Gempa!", 19, FontStyle.Normal, new Color(0.85f, 0.85f, 0.9f), defaultFont, new Vector2(0f, -55f), new Vector2(520f, 45f));
             missionUI.scoreEvaluationText = eval;
 
-            Button retryBtn = CreateButton("Btn_Retry", card.transform, "ULANGI LAGI ↺", new Color(0.2f, 0.45f, 0.85f), defaultFont, new Vector2(-140f, -125f), new Vector2(240f, 50f));
+            Button retryBtn = CreateButton("Btn_Retry", card.transform, "ULANGI LAGI ↺", new Color(0.2f, 0.45f, 0.85f), defaultFont, new Vector2(-140f, -135f), new Vector2(240f, 50f));
             missionUI.retryButton = retryBtn;
 
-            Button menuBtn = CreateButton("Btn_MainMenu", card.transform, "MENU UTAMA ⌂", new Color(0.5f, 0.2f, 0.25f), defaultFont, new Vector2(140f, -125f), new Vector2(240f, 50f));
+            Button menuBtn = CreateButton("Btn_MainMenu", card.transform, "MENU UTAMA ⌂", new Color(0.5f, 0.2f, 0.25f), defaultFont, new Vector2(140f, -135f), new Vector2(240f, 50f));
             missionUI.mainMenuButton = menuBtn;
 
             scoreObj.SetActive(false);
         }
 
-        // 9. Sambungkan referensi GameManager ke MissionUI
+        // 10. Sambungkan referensi GameManager
         gameManager.missionUI = missionUI;
+        if (quizMgr != null) gameManager.quizManager = quizMgr;
+        BoyController boy = Object.FindFirstObjectByType<BoyController>();
+        if (boy != null) gameManager.playerBoy = boy;
+
         EditorUtility.SetDirty(gameManager);
         EditorUtility.SetDirty(missionUI);
 
@@ -245,13 +284,11 @@ public static class EvacuationSetupEditor
 
         EditorUtility.DisplayDialog(
             "Setup Berhasil!",
-            "GameManager & UI Alur Evakuasi telah dibuat dan terhubung!\n\n" +
-            "Komponen yang siap:\n" +
-            "• GameManager: Menghitung waktu, mengontrol Level 1 -> 2 -> 3 -> Skor Akhir.\n" +
-            "• HUD Atas: Teks misi instruksi + Stopwatch waktu.\n" +
-            "• Hold Timer Bar: Muncul otomatis saat bersembunyi di kolong meja.\n" +
-            "• Popup Level Selesai: Muncul saat tiap level rampung.\n" +
-            "• Popup Skor Akhir: Menampilkan Bintang, Total Waktu, & Tombol Ulangi.",
+            "Seluruh Sistem Simulasi Evakuasi Berhasil Dipasang:\n\n" +
+            "• Level 1 Kuis Visual: 3 Soal pilihan (Rumah Bencana, Benda Goyang, Suara Gempa).\n" +
+            "• Level 2 & 3 HUD: Timer, petunjuk misi, hold progress bar.\n" +
+            "• Popup Selesai & Skor: Perolehan bintang, poin akumulasi, tombol lanjut/ulangi.\n" +
+            "• Terhubung otomatis ke GameManager & BoyController.",
             "Mantap");
     }
 
@@ -296,7 +333,7 @@ public static class EvacuationSetupEditor
         rect.offsetMax = Vector2.zero;
 
         Image img = modal.GetComponent<Image>();
-        img.color = new Color(0f, 0f, 0f, 0.7f); // Background redup semi transparan
+        img.color = new Color(0f, 0f, 0f, 0.75f);
         return modal;
     }
 
@@ -356,8 +393,8 @@ public static class EvacuationSetupEditor
 
         Button btn = obj.GetComponent<Button>();
         ColorBlock cb = btn.colors;
-        cb.highlightedColor = color * 1.15f;
-        cb.pressedColor = color * 0.85f;
+        cb.highlightedColor = color * 1.2f;
+        cb.pressedColor = color * 0.8f;
         btn.colors = cb;
 
         GameObject textObj = new GameObject("Text", typeof(RectTransform), typeof(Text));
@@ -365,8 +402,8 @@ public static class EvacuationSetupEditor
         RectTransform textRect = textObj.GetComponent<RectTransform>();
         textRect.anchorMin = Vector2.zero;
         textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = Vector2.zero;
-        textRect.offsetMax = Vector2.zero;
+        textRect.offsetMin = new Vector2(10f, 10f);
+        textRect.offsetMax = new Vector2(-10f, -10f);
 
         Text txt = textObj.GetComponent<Text>();
         txt.font = font;

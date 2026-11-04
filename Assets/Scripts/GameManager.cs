@@ -2,37 +2,38 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Mengatur alur level/misi evakuasi (Level 1, 2, 3), stopwatch waktu, dan perhitungan skor akhir.
+/// Mengatur alur level/misi evakuasi (Level 1, 2, 3), stopwatch waktu, poin, dan skor akhir.
 /// </summary>
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
     [Header("Status Level")]
-    [Tooltip("Level yang sedang aktif (1 = Kolong Meja, 2 = Koridor & Gang, 3 = Titik Kumpul)")]
+    [Tooltip("Level yang sedang aktif (1 = Kuis Bencana, 2 = Lindungi Diri di Meja, 3 = Evakuasi ke Lapangan)")]
     public int currentLevel = 1;
     public int maxLevel = 3;
     public bool isGameActive = false;
 
+    [Header("Poin Gamifikasi")]
+    public int currentScore = 0;
+
     [Header("Instruksi Setiap Level")]
     public string[] levelInstructions = new string[]
     {
-        "Level 1: Terjadi Gempa! Segera cari kolong meja dan RUNDUK untuk berlindung!",
-        "Level 2: Gempa mereda! Evakuasi keluar ruangan melewati koridor dan jalan gang!",
-        "Level 3: Menuju Zona Hijau (Titik Kumpul Evakuasi) di tengah lapangan!"
+        "Level 1: Kenali Bencana Gempa! Jawab 3 kuis visual di layar.",
+        "Level 2: Terjadi Gempa! Segera cari kolong meja dan RUNDUK untuk berlindung!",
+        "Level 3: Gempa reda! Berbaris di belakang Guru menuju Titik Kumpul di lapangan!"
     };
 
     [Header("Catatan Waktu & Penilaian")]
     public float totalElapsedTime = 0f;
-
-    [Header("Target Waktu Penilaian (Detik)")]
-    [Tooltip("Selesai di bawah waktu ini dapat Bintang 3")]
     public float goldTimeTarget = 60f;
-    [Tooltip("Selesai di bawah waktu ini dapat Bintang 2")]
     public float silverTimeTarget = 120f;
 
-    [Header("UI Reference")]
+    [Header("Komponen Terkait")]
     public MissionUI missionUI;
+    public Level1QuizManager quizManager;
+    public BoyController playerBoy;
 
     private void Awake()
     {
@@ -42,6 +43,11 @@ public class GameManager : MonoBehaviour
             return;
         }
         Instance = this;
+
+        if (playerBoy == null)
+        {
+            playerBoy = FindFirstObjectByType<BoyController>();
+        }
     }
 
     private void Start()
@@ -62,23 +68,45 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Memulai alur simulasi evakuasi dari Level 1.
+    /// Memulai alur simulasi evakuasi.
     /// </summary>
     public void StartGame()
     {
         currentLevel = 1;
         totalElapsedTime = 0f;
+        currentScore = 0;
         isGameActive = true;
 
         UpdateMissionStatus();
+
+        // Mulai kuis Level 1 jika ada
+        if (quizManager != null)
+        {
+            SetPlayerMovementEnabled(false);
+            quizManager.StartQuiz();
+        }
+    }
+
+    public void AddScore(int amount)
+    {
+        currentScore += amount;
+        Debug.Log($"[GameManager] +{amount} Poin! Total Skor: {currentScore}");
     }
 
     /// <summary>
-    /// Dipanggil saat pemain berhasil menyelesaikan objektif/checkpoint pada level tertentu.
+    /// Dipanggil otomatis oleh Level1QuizManager saat 3 soal selesai dijawab.
+    /// </summary>
+    public void OnLevel1QuizFinished()
+    {
+        Debug.Log("[GameManager] Kuis Level 1 Selesai!");
+        CompleteLevel(1);
+    }
+
+    /// <summary>
+    /// Dipanggil saat pemain menyelesaikan objektif pada level tertentu.
     /// </summary>
     public void CompleteLevel(int levelIndex)
     {
-        // Hanya proses jika level yang diselesaikan sesuai dengan level aktif saat ini
         if (levelIndex != currentLevel || !isGameActive)
         {
             return;
@@ -88,13 +116,13 @@ public class GameManager : MonoBehaviour
 
         if (currentLevel >= maxLevel)
         {
-            // Selesai seluruh simulasi -> Tampilkan Skor Akhir
             FinishGame();
         }
         else
         {
-            // Pause sementara permainan & tampilkan popup Level Selesai
             isGameActive = false;
+            SetPlayerMovementEnabled(false);
+
             if (missionUI != null)
             {
                 string title = $"LEVEL {currentLevel} SELESAI!";
@@ -105,7 +133,7 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Lanjut ke level/fase berikutnya (dipanggil dari tombol Lanjut pada UI).
+    /// Lanjut ke level berikutnya (dipanggil dari tombol Lanjut pada UI).
     /// </summary>
     public void NextLevel()
     {
@@ -117,15 +145,15 @@ public class GameManager : MonoBehaviour
             missionUI.HideLevelComplete();
         }
 
+        // Aktifkan kembali kontrol pemain saat masuk Level 2 & 3
+        SetPlayerMovementEnabled(true);
         UpdateMissionStatus();
     }
 
-    /// <summary>
-    /// Menyelesaikan seluruh simulasi dan menghitung perolehan bintang/skor.
-    /// </summary>
     private void FinishGame()
     {
         isGameActive = false;
+        SetPlayerMovementEnabled(false);
 
         int stars = 1;
         string evalText = "Cukup Baik! Tetap waspada dan percepat evakuasi.";
@@ -133,17 +161,25 @@ public class GameManager : MonoBehaviour
         if (totalElapsedTime <= goldTimeTarget)
         {
             stars = 3;
-            evalText = "Luar Biasa! Respon evakuasi sangat cepat dan tepat!";
+            evalText = "Luar Biasa! Respon evakuasi sangat cepat dan tepat! Kamu adalah Pahlawan Gempa!";
         }
         else if (totalElapsedTime <= silverTimeTarget)
         {
             stars = 2;
-            evalText = "Bagus! Kamu berhasil evakuasi dengan selamat.";
+            evalText = "Bagus! Kamu berhasil evakuasi dengan selamat!";
         }
 
         if (missionUI != null)
         {
-            missionUI.ShowFinalScore(totalElapsedTime, stars, evalText);
+            missionUI.ShowFinalScore(totalElapsedTime, stars, evalText, currentScore);
+        }
+    }
+
+    private void SetPlayerMovementEnabled(bool enabled)
+    {
+        if (playerBoy != null)
+        {
+            playerBoy.enabled = enabled;
         }
     }
 
@@ -165,9 +201,9 @@ public class GameManager : MonoBehaviour
         switch (level)
         {
             case 1:
-                return "Hebat! Kamu berhasil melindungi kepala dan tubuh di kolong meja selama gempa.";
+                return "Hebat! Kamu berhasil mengenali tanda-tanda dan bahaya gempa bumi!";
             case 2:
-                return "Bagus sekali! Kamu berhasil melewati lorong dan jalan gang dengan aman.";
+                return "Pintar sekali! Kamu berhasil melindungi kepala dan berlindung di kolong meja!";
             default:
                 return "Tahap ini berhasil diselesaikan!";
         }
@@ -181,7 +217,6 @@ public class GameManager : MonoBehaviour
 
     public void GoToMainMenu()
     {
-        // shortcut: Muat scene index 0 atau MainMenu jika belum dibuat di Build Settings
         if (Application.CanStreamedLevelBeLoaded("MainMenu"))
         {
             SceneManager.LoadScene("MainMenu");
