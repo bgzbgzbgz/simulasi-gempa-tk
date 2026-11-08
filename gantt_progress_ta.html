@@ -218,9 +218,9 @@
 <p class="subtitle">Game Simulasi Edukasi Evakuasi Gempa — Target Selesai: Minggu ke-4 November 2026</p>
 
 <div class="info-box">
-    <strong>Tanggal hari ini:</strong> 20 Oktober 2026 |
+    <strong>Tanggal hari ini:</strong> 8 November 2026 |
     <strong>Deadline:</strong> 28 November 2026 |
-    <strong>Sisa waktu:</strong> ~5,5 minggu
+    <strong>Sisa waktu:</strong> ~3 minggu
 </div>
 
 <div class="section-title">Tabel Progress Milestone</div>
@@ -243,12 +243,12 @@
             <tr><td>1</td><td>Karakter 3D dan Animasi</td><td><span class="badge done">Selesai</span></td><td>Sep 2026</td><td>Okt Mg-2</td><td>Model boy.fbx, Idle/Walk/Run/Crouch</td></tr>
             <tr><td>2</td><td>Kontrol Karakter (PC + Mobile)</td><td><span class="badge done">Selesai</span></td><td>Sep 2026</td><td>Okt Mg-2</td><td>BoyController, Joystick, CrouchButton</td></tr>
             <tr><td>3</td><td>Kamera Third-Person</td><td><span class="badge done">Selesai</span></td><td>Sep 2026</td><td>Okt Mg-2</td><td>Orbit, collision, soft follow</td></tr>
-            <tr><td>4</td><td>Environment Kelas TK (Blockout)</td><td><span class="badge progress">Proses (90%)</span></td><td>Okt Mg-1</td><td>Nov Mg-1</td><td>denah_tes.fbx import ke scene LECVEL, proses penataan collider</td></tr>
-            <tr><td>5</td><td>Mekanik Drop dan Cover (Kolong Meja)</td><td><span class="badge progress">Proses</span></td><td>Okt Mg-2</td><td>Okt Mg-4</td><td>ShelterZone aktif, fix double-click, butuh Hold Timer</td></tr>
-            <tr><td>6</td><td>Efek Simulasi Gempa</td><td><span class="badge todo">Belum</span></td><td>Okt Mg-4</td><td>Nov Mg-1</td><td>Camera shake, suara gempa, visual FX</td></tr>
-            <tr><td>7</td><td>Game Manager dan Alur Level</td><td><span class="badge progress">Proses (40%)</span></td><td>Nov Mg-1</td><td>Nov Mg-2</td><td>Draft script GameManager selesai, proses wiring scene</td></tr>
-            <tr><td>8</td><td>Level 3: Evakuasi ke Titik Kumpul</td><td><span class="badge progress">Proses (30%)</span></td><td>Nov Mg-2</td><td>Nov Mg-3</td><td>Script CheckpointTrigger & alur navigasi selesai</td></tr>
-            <tr><td>9</td><td>UI dan Scoring / Evaluasi</td><td><span class="badge progress">Proses (35%)</span></td><td>Nov Mg-2</td><td>Nov Mg-3</td><td>Script MissionUI (HUD & Timer) selesai</td></tr>
+            <tr><td>4</td><td>Environment Kelas TK & Furnitur</td><td><span class="badge done">Selesai (95%)</span></td><td>Okt Mg-1</td><td>Nov Mg-1</td><td>denah_tes.fbx di LECVEL & daftar kebutuhan furnitur/properti TK selesai dirumuskan</td></tr>
+            <tr><td>5</td><td>Mekanik Drop dan Cover (Kolong Meja)</td><td><span class="badge done">Selesai</span></td><td>Okt Mg-2</td><td>Nov Mg-1</td><td>ShelterZone & CheckpointTrigger Hold Timer 5s selesai diuji</td></tr>
+            <tr><td>6</td><td>Efek Simulasi Gempa</td><td><span class="badge progress">Proses (85%)</span></td><td>Okt Mg-4</td><td>Nov Mg-1</td><td>EarthquakeEffect.cs (shake, flash overlay, benda jatuh) siap di scene</td></tr>
+            <tr><td>7</td><td>Game Manager dan Alur Level</td><td><span class="badge progress">Proses (85%)</span></td><td>Nov Mg-1</td><td>Nov Mg-2</td><td>FSM Level 1-2-3, stopwatch, kuis Level 1 & Level23SetupEditor</td></tr>
+            <tr><td>8</td><td>Level 3: Evakuasi ke Titik Kumpul</td><td><span class="badge progress">Proses (80%)</span></td><td>Nov Mg-2</td><td>Nov Mg-3</td><td>EvacuationGuide (NavMesh path) & trigger titik kumpul lapangan</td></tr>
+            <tr><td>9</td><td>UI dan Scoring / Evaluasi</td><td><span class="badge progress">Proses (80%)</span></td><td>Nov Mg-2</td><td>Nov Mg-3</td><td>MissionUI (HUD, timer, hold progress, popup level selesai & skor)</td></tr>
             <tr><td>10</td><td>Testing dan Build Final APK</td><td><span class="badge todo">Belum</span></td><td>Nov Mg-3</td><td>Nov Mg-4</td><td>Bug fix, optimasi, build release</td></tr>
         </tbody>
     </table>
@@ -267,7 +267,7 @@
         <div class="col-label">Nov Mg-4<br><small style="color:#555">23-28 Nov</small></div>
     </div>
 
-    <div class="gantt-row">
+        <div class="gantt-row">
         <div class="gantt-label">1. Karakter dan Animasi</div>
         <div class="gantt-cell"><div class="gantt-bar bar-done" style="width:40%; opacity:.5"></div></div>
         <div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div>
@@ -285,39 +285,45 @@
     <div class="gantt-row">
         <div class="gantt-label">4. Environment Kelas TK</div>
         <div class="gantt-cell"><div class="gantt-bar bar-done"></div></div>
-        <div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div>
+        <div class="gantt-cell"><div class="gantt-bar bar-done"></div></div>
+        <div class="gantt-cell"><div class="gantt-bar bar-done"></div></div>
+        <div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div>
     </div>
     <div class="gantt-row">
         <div class="gantt-label">5. Drop dan Cover</div>
         <div class="gantt-cell"><div class="gantt-bar bar-progress"></div></div>
         <div class="gantt-cell"><div class="gantt-bar bar-progress"></div></div>
-        <div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div>
+        <div class="gantt-cell"><div class="gantt-bar bar-done"></div></div>
+        <div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div>
     </div>
     <div class="gantt-row">
         <div class="gantt-label">6. Efek Simulasi Gempa</div>
         <div class="gantt-cell"></div>
+        <div class="gantt-cell"></div>
+        <div class="gantt-cell"><div class="gantt-bar bar-progress"></div></div>
         <div class="gantt-cell"><div class="gantt-bar bar-todo"></div></div>
-        <div class="gantt-cell"><div class="gantt-bar bar-todo"></div></div>
-        <div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div>
+        <div class="gantt-cell"></div><div class="gantt-cell"></div>
     </div>
     <div class="gantt-row">
         <div class="gantt-label">7. Game Manager dan Alur Level</div>
         <div class="gantt-cell"></div><div class="gantt-cell"></div>
-        <div class="gantt-cell"><div class="gantt-bar bar-todo"></div></div>
-        <div class="gantt-cell"><div class="gantt-bar bar-todo"></div></div>
+        <div class="gantt-cell"><div class="gantt-bar bar-progress"></div></div>
+        <div class="gantt-cell"><div class="gantt-bar bar-progress"></div></div>
         <div class="gantt-cell"></div><div class="gantt-cell"></div>
     </div>
     <div class="gantt-row">
         <div class="gantt-label">8. Evakuasi ke Titik Kumpul</div>
-        <div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div>
-        <div class="gantt-cell"><div class="gantt-bar bar-todo"></div></div>
+        <div class="gantt-cell"></div><div class="gantt-cell"></div>
+        <div class="gantt-cell"><div class="gantt-bar bar-progress"></div></div>
+        <div class="gantt-cell"><div class="gantt-bar bar-progress"></div></div>
         <div class="gantt-cell"><div class="gantt-bar bar-todo"></div></div>
         <div class="gantt-cell"></div>
     </div>
     <div class="gantt-row">
         <div class="gantt-label">9. UI dan Scoring</div>
-        <div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div>
-        <div class="gantt-cell"><div class="gantt-bar bar-todo"></div></div>
+        <div class="gantt-cell"></div><div class="gantt-cell"></div>
+        <div class="gantt-cell"><div class="gantt-bar bar-progress"></div></div>
+        <div class="gantt-cell"><div class="gantt-bar bar-progress"></div></div>
         <div class="gantt-cell"><div class="gantt-bar bar-todo"></div></div>
         <div class="gantt-cell"></div>
     </div>
@@ -355,12 +361,12 @@
 1&#9;Karakter 3D dan Animasi&#9;Selesai&#9;Sep 2026&#9;Okt Mg-2&#9;####&#9;&#9;&#9;&#9;&#9;&#9;Model boy.fbx Idle/Walk/Run/Crouch
 2&#9;Kontrol Karakter (PC + Mobile)&#9;Selesai&#9;Sep 2026&#9;Okt Mg-2&#9;####&#9;&#9;&#9;&#9;&#9;&#9;BoyController Joystick CrouchButton
 3&#9;Kamera Third-Person&#9;Selesai&#9;Sep 2026&#9;Okt Mg-2&#9;####&#9;&#9;&#9;&#9;&#9;&#9;Orbit collision soft follow
-4&#9;Environment Kelas TK&#9;Selesai&#9;Okt Mg-1&#9;Okt Mg-3&#9;####&#9;&#9;&#9;&#9;&#9;&#9;Dinding lantai meja papan tulis
-5&#9;Drop dan Cover (Kolong Meja)&#9;Proses&#9;Okt Mg-2&#9;Okt Mg-4&#9;####&#9;####&#9;&#9;&#9;&#9;&#9;ShelterZone trigger perlu Hold Timer
-6&#9;Efek Simulasi Gempa&#9;Belum&#9;Okt Mg-4&#9;Nov Mg-1&#9;&#9;####&#9;####&#9;&#9;&#9;&#9;Camera shake suara gempa visual FX
-7&#9;Game Manager dan Alur Level&#9;Belum&#9;Nov Mg-1&#9;Nov Mg-2&#9;&#9;&#9;####&#9;####&#9;&#9;&#9;Level 1-2-3 flow state machine
-8&#9;Evakuasi ke Titik Kumpul&#9;Belum&#9;Nov Mg-2&#9;Nov Mg-3&#9;&#9;&#9;&#9;####&#9;####&#9;&#9;Jalur evakuasi waypoint
-9&#9;UI dan Scoring&#9;Belum&#9;Nov Mg-2&#9;Nov Mg-3&#9;&#9;&#9;&#9;####&#9;####&#9;&#9;Skor bintang waktu tanggap
+4&#9;Environment Kelas TK&#9;Selesai&#9;Okt Mg-1&#9;Nov Mg-1&#9;####&#9;####&#9;####&#9;&#9;&#9;&#9;denah_tes.fbx di LECVEL & daftar furnitur/properti TK
+5&#9;Drop dan Cover (Kolong Meja)&#9;Selesai&#9;Okt Mg-2&#9;Nov Mg-1&#9;####&#9;####&#9;####&#9;&#9;&#9;&#9;ShelterZone & CheckpointTrigger Hold Timer 5s selesai
+6&#9;Efek Simulasi Gempa&#9;Proses&#9;Okt Mg-4&#9;Nov Mg-1&#9;&#9;&#9;####&#9;####&#9;&#9;&#9;EarthquakeEffect (shake, flash overlay, benda jatuh)
+7&#9;Game Manager dan Alur Level&#9;Proses&#9;Nov Mg-1&#9;Nov Mg-2&#9;&#9;&#9;####&#9;####&#9;&#9;&#9;FSM Level 1-2-3, stopwatch, kuis & scoring
+8&#9;Evakuasi ke Titik Kumpul&#9;Proses&#9;Nov Mg-2&#9;Nov Mg-3&#9;&#9;&#9;####&#9;####&#9;####&#9;&#9;EvacuationGuide (NavMesh path) & trigger titik kumpul
+9&#9;UI dan Scoring&#9;Proses&#9;Nov Mg-2&#9;Nov Mg-3&#9;&#9;&#9;####&#9;####&#9;####&#9;&#9;MissionUI HUD timer, hold bar, level complete & skor
 10&#9;Testing dan Build Final APK&#9;Belum&#9;Nov Mg-3&#9;Nov Mg-4&#9;&#9;&#9;&#9;&#9;####&#9;####&#9;Bug fix optimasi build release</textarea>
 </div>
 
