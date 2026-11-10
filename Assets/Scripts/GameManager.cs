@@ -20,15 +20,15 @@ public class GameManager : MonoBehaviour
     [Header("Instruksi Setiap Level")]
     public string[] levelInstructions = new string[]
     {
-        "Level 1: Terjadi Gempa! Segera cari kolong meja dan RUNDUK untuk berlindung!",
-        "Level 2: Gempa mereda! Evakuasi keluar melewati koridor dan jalan gang pemukiman!",
-        "Level 3: Segera menuju Zona Hijau (Titik Kumpul Evakuasi) di lapangan terbuka!"
+        "Level 1: Masuk ke lingkaran zona mulai di depan TV untuk memulai simulasi gempa!",
+        "Level 2: Terjadi Gempa! Segera cari kolong meja dan RUNDUK untuk berlindung!",
+        "Level 3: Gempa mereda! Ikuti jalur evakuasi menuju Titik Kumpul di lapangan terbuka!"
     };
 
     [Header("Alur Mulai via Checkpoint")]
     [Tooltip("Jika dicentang, simulasi menunggu pemain melangkah ke zona checkpoint mulai terlebih dahulu.")]
     public bool waitForStartTrigger = true;
-    public string waitingInstruction = "Silakan bersiap di kelas. Masuk ke lingkaran zona mulai untuk memicu simulasi gempa!";
+    public string waitingInstruction = "Silakan bersiap di kelas. Masuk ke lingkaran zona mulai di depan TV untuk memicu simulasi gempa!";
     [Tooltip("Aktifkan HANYA jika ingin menyertakan kuis popup (default mati agar imersif).")]
     public bool enableLevel1Quiz = false;
 
@@ -119,9 +119,9 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void StartSimulation()
     {
-        currentLevel = 1;
+        currentLevel = 2; // Langsung ke Level 2 (Gempa) karena trigger TV menggantikan kuis Level 1
         totalElapsedTime = 0f;
-        currentScore = 0;
+        currentScore = 10;
         isGameActive = true;
         SetPlayerMovementEnabled(true);
 
@@ -130,6 +130,7 @@ public class GameManager : MonoBehaviour
         // Mulai kuis HANYA jika opsi enableLevel1Quiz diaktifkan secara eksplisit
         if (enableLevel1Quiz && quizManager != null)
         {
+            currentLevel = 1;
             SetPlayerMovementEnabled(false);
             quizManager.StartQuiz();
         }

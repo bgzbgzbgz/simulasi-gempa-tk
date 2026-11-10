@@ -137,6 +137,7 @@ public class CheckpointTrigger : MonoBehaviour
             if (isStartSimulationTrigger)
             {
                 GameManager.Instance.StartSimulation();
+                gameObject.SetActive(false);
             }
             else
             {
