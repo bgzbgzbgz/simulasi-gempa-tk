@@ -12,6 +12,10 @@ public class CheckpointTrigger : MonoBehaviour
     public int targetLevel = 1;
     public string checkpointName = "Titik Checkpoint";
 
+    [Header("Mode Trigger Mulai Simulasi")]
+    [Tooltip("Jika dicentang, checkpoint ini berfungsi sebagai trigger pemicu awal simulasi (bukan menyelesaikan level).")]
+    public bool isStartSimulationTrigger = false;
+
     [Header("Syarat Objektif")]
     [Tooltip("Apakah karakter pemain harus dalam posisi menunduk (Crouch)?")]
     public bool requireCrouch = false;
@@ -69,6 +73,16 @@ public class CheckpointTrigger : MonoBehaviour
             return;
         }
 
+        // Jika ini adalah trigger awal mulai simulasi
+        if (isStartSimulationTrigger)
+        {
+            if (!GameManager.Instance.isGameActive)
+            {
+                TriggerComplete();
+            }
+            return;
+        }
+
         // Cek apakah saat ini level yang aktif sesuai
         if (GameManager.Instance.currentLevel != targetLevel || !GameManager.Instance.isGameActive)
         {
@@ -113,12 +127,22 @@ public class CheckpointTrigger : MonoBehaviour
         isCompleted = true;
         currentHoldTimer = 0f;
 
-        if (GameManager.Instance.missionUI != null)
+        if (GameManager.Instance != null)
         {
-            GameManager.Instance.missionUI.ResetHoldProgress();
-        }
+            if (GameManager.Instance.missionUI != null)
+            {
+                GameManager.Instance.missionUI.ResetHoldProgress();
+            }
 
-        GameManager.Instance.CompleteLevel(targetLevel);
+            if (isStartSimulationTrigger)
+            {
+                GameManager.Instance.StartSimulation();
+            }
+            else
+            {
+                GameManager.Instance.CompleteLevel(targetLevel);
+            }
+        }
     }
 
     private BoyController GetBoyController(Collider col)

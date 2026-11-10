@@ -20,10 +20,17 @@ public class GameManager : MonoBehaviour
     [Header("Instruksi Setiap Level")]
     public string[] levelInstructions = new string[]
     {
-        "Level 1: Kenali Bencana Gempa! Jawab 3 kuis visual di layar.",
-        "Level 2: Terjadi Gempa! Segera cari kolong meja dan RUNDUK untuk berlindung!",
-        "Level 3: Gempa reda! Berbaris di belakang Guru menuju Titik Kumpul di lapangan!"
+        "Level 1: Terjadi Gempa! Segera cari kolong meja dan RUNDUK untuk berlindung!",
+        "Level 2: Gempa mereda! Evakuasi keluar melewati koridor dan jalan gang pemukiman!",
+        "Level 3: Segera menuju Zona Hijau (Titik Kumpul Evakuasi) di lapangan terbuka!"
     };
+
+    [Header("Alur Mulai via Checkpoint")]
+    [Tooltip("Jika dicentang, simulasi menunggu pemain melangkah ke zona checkpoint mulai terlebih dahulu.")]
+    public bool waitForStartTrigger = true;
+    public string waitingInstruction = "Silakan bersiap di kelas. Masuk ke lingkaran zona mulai untuk memicu simulasi gempa!";
+    [Tooltip("Aktifkan HANYA jika ingin menyertakan kuis popup (default mati agar imersif).")]
+    public bool enableLevel1Quiz = false;
 
     [Header("Catatan Waktu & Penilaian")]
     public float totalElapsedTime = 0f;
@@ -52,7 +59,23 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        StartGame();
+        if (waitForStartTrigger)
+        {
+            isGameActive = false;
+            currentLevel = 0;
+            totalElapsedTime = 0f;
+
+            if (missionUI != null)
+            {
+                missionUI.SetInstruction(waitingInstruction);
+                missionUI.UpdateTimerDisplay(0f);
+            }
+            SetPlayerMovementEnabled(true);
+        }
+        else
+        {
+            StartSimulation();
+        }
     }
 
     private void Update()
@@ -68,23 +91,29 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Memulai alur simulasi evakuasi.
+    /// Memulai alur simulasi evakuasi (dipanggil saat pemain menginjak Checkpoint Mulai).
     /// </summary>
-    public void StartGame()
+    public void StartSimulation()
     {
         currentLevel = 1;
         totalElapsedTime = 0f;
         currentScore = 0;
         isGameActive = true;
+        SetPlayerMovementEnabled(true);
 
         UpdateMissionStatus();
 
-        // Mulai kuis Level 1 jika ada
-        if (quizManager != null)
+        // Mulai kuis HANYA jika opsi enableLevel1Quiz diaktifkan secara eksplisit
+        if (enableLevel1Quiz && quizManager != null)
         {
             SetPlayerMovementEnabled(false);
             quizManager.StartQuiz();
         }
+    }
+
+    public void StartGame()
+    {
+        StartSimulation();
     }
 
     public void AddScore(int amount)
@@ -201,9 +230,9 @@ public class GameManager : MonoBehaviour
         switch (level)
         {
             case 1:
-                return "Hebat! Kamu berhasil mengenali tanda-tanda dan bahaya gempa bumi!";
-            case 2:
                 return "Pintar sekali! Kamu berhasil melindungi kepala dan berlindung di kolong meja!";
+            case 2:
+                return "Hebat! Kamu berhasil mengevakuasi diri keluar melewati lorong dan jalan gang!";
             default:
                 return "Tahap ini berhasil diselesaikan!";
         }

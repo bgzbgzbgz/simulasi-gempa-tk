@@ -277,6 +277,28 @@ public static class EvacuationSetupEditor
         BoyController boy = Object.FindFirstObjectByType<BoyController>();
         if (boy != null) gameManager.playerBoy = boy;
 
+        gameManager.waitForStartTrigger = true;
+        gameManager.enableLevel1Quiz = false;
+
+        // Pastikan Trigger Mulai Simulasi ada di scene
+        GameObject startTrigger = GameObject.Find("Trigger_Mulai_Simulasi");
+        if (startTrigger == null)
+        {
+            startTrigger = new GameObject("Trigger_Mulai_Simulasi");
+            startTrigger.transform.position = new Vector3(7.67f, 0f, -8.5f);
+            BoxCollider box = startTrigger.AddComponent<BoxCollider>();
+            box.isTrigger = true;
+            box.size = new Vector3(3f, 2f, 3f);
+            box.center = new Vector3(0f, 1f, 0f);
+
+            CheckpointTrigger cp = startTrigger.AddComponent<CheckpointTrigger>();
+            cp.isStartSimulationTrigger = true;
+            cp.checkpointName = "Zona Mulai Simulasi";
+            cp.gizmoColor = new Color(1f, 0.85f, 0.1f, 0.4f);
+
+            Undo.RegisterCreatedObjectUndo(startTrigger, "Create Start Trigger");
+        }
+
         EditorUtility.SetDirty(gameManager);
         EditorUtility.SetDirty(missionUI);
 
@@ -284,9 +306,9 @@ public static class EvacuationSetupEditor
 
         EditorUtility.DisplayDialog(
             "Setup Berhasil!",
-            "Seluruh Sistem Simulasi Evakuasi Berhasil Dipasang:\n\n" +
-            "• Level 1 Kuis Visual: 3 Soal pilihan (Rumah Bencana, Benda Goyang, Suara Gempa).\n" +
-            "• Level 2 & 3 HUD: Timer, petunjuk misi, hold progress bar.\n" +
+            "Seluruh Sistem Simulasi Evakuasi Berhasil Diperbarui:\n\n" +
+            "• Tanpa Kuis Awal Dadakan: Simulasi dimulai saat pemain melangkah ke 'Trigger_Mulai_Simulasi'.\n" +
+            "• Level 1-2-3 HUD: Timer, petunjuk misi, hold progress bar.\n" +
             "• Popup Selesai & Skor: Perolehan bintang, poin akumulasi, tombol lanjut/ulangi.\n" +
             "• Terhubung otomatis ke GameManager & BoyController.",
             "Mantap");
