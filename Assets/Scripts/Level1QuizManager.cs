@@ -45,6 +45,12 @@ public class Level1QuizManager : MonoBehaviour
 
     private void Awake()
     {
+        // Pastikan panel kuis selalu nonaktif secara default saat awal game
+        if (quizPanel != null)
+        {
+            quizPanel.SetActive(false);
+        }
+
         // Inisialisasi default 3 soal sesuai dokumen acuan jika belum di-set di Inspector
         if (questions == null || questions.Length == 0)
         {

@@ -216,6 +216,7 @@ public static class EvacuationSetupEditor
 
             quizMgr.SetupDefaultQuestions();
             gameManager.quizManager = quizMgr;
+            quizPanelObj.SetActive(false);
         }
 
         // 8. Buat Modal Popup Level Complete

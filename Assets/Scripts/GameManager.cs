@@ -55,6 +55,30 @@ public class GameManager : MonoBehaviour
         {
             playerBoy = FindFirstObjectByType<BoyController>();
         }
+
+        if (quizManager == null)
+        {
+            quizManager = FindFirstObjectByType<Level1QuizManager>(FindObjectsInactive.Include);
+        }
+
+        // Pastikan panel kuis selalu tersembunyi saat game dimulai
+        if (quizManager != null)
+        {
+            if (quizManager.quizPanel != null)
+            {
+                quizManager.quizPanel.SetActive(false);
+            }
+            if (!enableLevel1Quiz)
+            {
+                quizManager.gameObject.SetActive(false);
+            }
+        }
+
+        GameObject quizObj = GameObject.Find("Panel_Level1_Quiz");
+        if (quizObj != null && !enableLevel1Quiz)
+        {
+            quizObj.SetActive(false);
+        }
     }
 
     private void Start()
