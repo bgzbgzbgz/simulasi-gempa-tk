@@ -37,6 +37,8 @@ Pemain mengendalikan karakter anak laki-laki (third-person 3D) melalui 3 level b
 | 2 | Drop & Cover | Cari kolong meja → runduk → tahan posisi | `CheckpointTrigger` (targetLevel 2, requireCrouch, hold time) |
 | 3 | Evakuasi | Ikuti jalur evakuasi ke titik kumpul di lapangan | `CheckpointTrigger` (targetLevel 3) di titik kumpul |
 
+> **Catatan Desain Level 3:** Sesuai proposal resmi TA, Level 3 murni fokus pada simulasi jalur evakuasi menuju Titik Kumpul (*Assembly Point*) di lapangan terbuka dan kewaspadaan terhadap gempa susulan. Mekanik mengambil/memegang tas di kepala tidak digunakan (pemain langsung berjalan/berlari mengikuti garis panduan evakuasi).
+
 **Penilaian:** total waktu → bintang (≤ 60 detik = 3, ≤ 120 detik = 2, lainnya = 1; di Inspector
 `goldTimeTarget` / `silverTimeTarget`), plus **+10 poin** per jawaban kuis yang benar.
 
@@ -90,13 +92,14 @@ Yang relevan:
 | `ThirdPersonCamera.cs` | Kamera orbit third-person dengan collision | (tidak ada) |
 | `VirtualJoystick.cs` | Joystick layar sentuh; juga mengunci layar ke landscape | properti `InputDirection` |
 | `CrouchButton.cs` | Tombol runduk di layar | `OnClickButton` |
-| `EarthquakeEffect.cs` | Efek gempa selama Level 2: guncangan kamera (berjalan setelah `ThirdPersonCamera`), overlay berkedip, suara gemuruh, benda jatuh | properti `IsShaking` |
+| `EarthquakeEffect.cs` | Efek gempa selama Level 2 (Drop & Cover) dan gempa susulan Level 3: guncangan kamera (berjalan setelah `ThirdPersonCamera`), overlay berkedip, suara gemuruh, benda jatuh | properti `IsShaking`, method `TriggerAftershock` |
+| `AftershockTrigger.cs` | Trigger gempa susulan di lorong/waypoint Level 3: memutar audio VO_09b, guncangan kamera ThirdPersonCamera (0.08f), suara gemuruh SoundManager, getaran HP, dan update instruksi HUD | (tidak ada; atur di Inspector) |
 | `EvacuationGuide.cs` | Garis jalur evakuasi Level 3 dari pemain ke titik kumpul, mengikuti NavMesh (garis lurus bila NavMesh belum di-bake) | (tidak ada) |
 
 ### Tool Editor (`Assets/Scripts/Editor/`, menu **Tools**)
 
 | Menu | File | Hasil |
-|------|------|-------|
+|---|---|---|
 | Tools/Setup Game Manager & UI Evakuasi | `EvacuationSetupEditor.cs` | GameManager, Canvas HUD misi, panel kuis Level 1, panel level selesai & skor akhir, EventSystem |
 | Tools/Generate Skenario Evakuasi Lengkap (Real TK) | `RealScenarioGenerator.cs` | Blockout ruang kelas (3 meja + ShelterZone), koridor, gang, lapangan + area titik kumpul (trigger BoxCollider **tanpa** CheckpointTrigger) |
 | Tools/Export Denah ke OBJ (Untuk Edit di Blender) | `RealScenarioGenerator.cs` | Ekspor denah ke OBJ |
@@ -107,6 +110,7 @@ Yang relevan:
 | Tools/Level 2: Pasang Objektif Berlindung di Meja Terpilih | `Level23SetupEditor.cs` | Zona `CheckpointTrigger` (targetLevel 2, wajib runduk, tahan 5 detik) di setiap meja yang dipilih |
 | Tools/Level 2: Pasang Efek Gempa | `Level23SetupEditor.cs` | Objek `Efek_Gempa` (EarthquakeEffect + AudioSource) dan `Overlay_Gempa` di Canvas |
 | Tools/Level 3: Pasang Titik Kumpul di Posisi Terpilih | `Level23SetupEditor.cs` | `Titik_Kumpul_Level3` (CheckpointTrigger targetLevel 3 + penanda hijau) dan `Jalur_Evakuasi` (EvacuationGuide) |
+| Tools/Level 3: Pasang Trigger Gempa Susulan | `Level23SetupEditor.cs` | Objek `Trigger_Gempa_Susulan` (AftershockTrigger + BoxCollider trigger + AudioSource VO_09b) di lorong/koridor |
 
 Sebelum membuat setup manual, cek dulu apakah salah satu tool di atas sudah melakukannya.
 

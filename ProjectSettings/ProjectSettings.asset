@@ -12,7 +12,7 @@ PlayerSettings:
   targetDevice: 2
   useOnDemandResources: 0
   accelerometerFrequency: 60
-  companyName: DefaultCompany
+  companyName: com.Bagas.SimulasiGempaTK
   productName: progress ta
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
@@ -930,7 +930,7 @@ PlayerSettings:
   qnxGraphicConfPath: 
   apiCompatibilityLevel: 6
   captureStartupLogs: {}
-  activeInputHandler: 1
+  activeInputHandler: 2
   windowsGamepadBackendHint: 0
   cloudProjectId: 889d9932-6753-4ec9-b0ea-ccd49a5e4918
   framebufferDepthMemorylessMode: 0

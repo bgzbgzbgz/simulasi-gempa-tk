@@ -50,6 +50,7 @@ public class CrouchButton : MonoBehaviour, IPointerDownHandler
 
         if (targetBoy != null)
         {
+            if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
             targetBoy.ToggleCrouch();
             Debug.Log($"[CrouchButton] Status Nunduk: {targetBoy.IsCrouching}");
         }
