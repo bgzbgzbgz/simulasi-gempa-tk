@@ -58,6 +58,7 @@ tombol Lanjut → `NextLevel()` (gerak aktif lagi) → `CompleteLevel(2)` → �
 - **Input:** New Input System (`UnityEngine.InputSystem`), keyboard + `VirtualJoystick` + `CrouchButton`
 - **Teks UI tanpa emoji.** `Text` legacy umumnya tidak bisa menampilkan emoji seperti ⭐. Untuk bintang
   pakai simbol `★` / `☆` seperti di `MissionUI.cs`.
+- **Animasi Avatar Bu Guru & Voice Over (VO):** Avatar Bu Guru pada HUD/layar gameplay muncul menggunakan animasi *slide-in* dari sisi kiri layar ke kanan (`RectTransform` bergerak horizontal masuk). Animasi ini ditrigger tepat sesaat sebelum atau bersamaan dengan audio Voice Over (instruksi/narasi suara Bu Guru) mulai diputar.
 
 ### Package
 Pakai package yang **sudah ada** di `Packages/manifest.json`; jangan menambah package baru.
@@ -144,8 +145,8 @@ Sebelum membuat setup manual, cek dulu apakah salah satu tool di atas sudah mela
 Catatan: teks instruksi Level 3 di GameManager menyebut "di belakang Guru", tetapi belum ada karakter guru.
 
 ### ❌ Belum jadi
-1. **Polish UI skor akhir:** animasi bintang, panel hasil yang menarik untuk anak TK
-2. **Audio:** narasi, SFX gempa (belum ada file suara di repo), feedback
+1. **Polish UI & Animasi HUD:** animasi bintang di panel skor akhir, serta animasi *slide-in* Avatar Bu Guru dari kiri ke kanan saat Voice Over aktif
+2. **Audio:** file suara Voice Over Bu Guru (pemicu avatar), SFX gempa (belum ada file suara di repo), feedback audio kuis
 3. **Karakter guru** untuk Level 3 (atau ubah teks instruksinya)
 4. **Android build & performa**
 5. **Unit test** (`com.unity.test-framework` sudah terpasang, belum ada test)

@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 public static class VirtualJoystickEditorSetup
 {
-    [MenuItem("Tools/Buat Virtual Joystick UI (Mobile)")]
+    [MenuItem("Tools/UI & Mobile/Buat Virtual Joystick UI")]
     public static void CreateJoystickUI()
     {
         // 1. Pastikan EventSystem tersedia
@@ -112,7 +112,7 @@ public static class VirtualJoystickEditorSetup
             "Mantap");
     }
 
-    [MenuItem("Tools/Tambah Tombol Merunduk (Crouch Button)")]
+    [MenuItem("Tools/UI & Mobile/Tambah Tombol Merunduk (Crouch Button)")]
     public static void CreateCrouchButtonMenu()
     {
         EnsureEventSystem();

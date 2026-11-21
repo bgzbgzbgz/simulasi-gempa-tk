@@ -20,6 +20,9 @@ public class CheckpointTrigger : MonoBehaviour
     [Tooltip("Apakah karakter pemain harus dalam posisi menunduk (Crouch)?")]
     public bool requireCrouch = false;
 
+    [Tooltip("Apakah pemain harus sudah mengambil tas pelindung kepala?")]
+    public bool requireBag = false;
+
     [Tooltip("Durasi yang dibutuhkan pemain berada di zona ini (detik). Isi 0 untuk langsung selesai saat disentuh.")]
     public float requiredHoldTime = 0f;
 
@@ -89,6 +92,12 @@ public class CheckpointTrigger : MonoBehaviour
             return;
         }
 
+        // Cek syarat mengambil tas jika diwajibkan (misal pada checkpoint titik kumpul Level 3)
+        if (requireBag && !GameManager.Instance.hasPickedUpBag)
+        {
+            return;
+        }
+
         // Cek syarat menunduk jika diwajibkan
         if (requireCrouch && currentPlayer != null && !currentPlayer.IsCrouching)
         {
@@ -137,7 +146,17 @@ public class CheckpointTrigger : MonoBehaviour
             if (isStartSimulationTrigger)
             {
                 GameManager.Instance.StartSimulation();
-                gameObject.SetActive(false);
+                
+                // Matikan trigger ini agar tidak terpanggil ulang,
+                // tapi JANGAN matikan gameObject jika ini adalah TV (prop kelas)
+                this.enabled = false;
+                Collider col = GetComponent<Collider>();
+                if (col != null) col.enabled = false;
+
+                if (gameObject.name.Contains("Trigger") || gameObject.name.Contains("Zona"))
+                {
+                    gameObject.SetActive(false);
+                }
             }
             else
             {
