@@ -1969,7 +1969,8 @@ public static class Level23SetupEditor
         soGuide.FindProperty("lineWidth").floatValue = 0.75f;
         soGuide.FindProperty("heightAboveGround").floatValue = 0.22f;
         soGuide.FindProperty("arrowDensity").floatValue = 0.35f;
-        soGuide.FindProperty("arrowScrollSpeed").floatValue = 2.2f;
+        var pSpeed = soGuide.FindProperty("arrowScrollSpeed");
+        if (pSpeed != null) pSpeed.floatValue = 2.2f;
         soGuide.FindProperty("waypointReachRadius").floatValue = 2.2f;
         soGuide.ApplyModifiedProperties();
 
