@@ -1967,13 +1967,18 @@ public static class Level23SetupEditor
             starsProp.InsertArrayElementAtIndex(i);
             starsProp.GetArrayElementAtIndex(i).objectReferenceValue = starList[i];
         }
-        soGuide.FindProperty("arrowMaterial").objectReferenceValue = matChevron;
-        soGuide.FindProperty("lineWidth").floatValue = 0.75f;
-        soGuide.FindProperty("heightAboveGround").floatValue = 0.22f;
-        soGuide.FindProperty("arrowDensity").floatValue = 0.35f;
+        var pMat = soGuide.FindProperty("arrowMaterial");
+        if (pMat != null) pMat.objectReferenceValue = matChevron;
+        var pWidth = soGuide.FindProperty("lineWidth");
+        if (pWidth != null) pWidth.floatValue = 0.75f;
+        var pHeight = soGuide.FindProperty("heightAboveGround");
+        if (pHeight != null) pHeight.floatValue = 0.22f;
+        var pDensity = soGuide.FindProperty("arrowDensity");
+        if (pDensity != null) pDensity.floatValue = 0.35f;
         var pSpeed = soGuide.FindProperty("arrowScrollSpeed");
         if (pSpeed != null) pSpeed.floatValue = 2.2f;
-        soGuide.FindProperty("waypointReachRadius").floatValue = 2.2f;
+        var pReach = soGuide.FindProperty("waypointReachRadius");
+        if (pReach != null) pReach.floatValue = 2.2f;
         soGuide.ApplyModifiedProperties();
 
         if (!Application.isPlaying)

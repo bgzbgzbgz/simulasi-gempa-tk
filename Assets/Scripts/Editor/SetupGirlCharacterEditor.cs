@@ -163,10 +163,8 @@ public static class SetupGirlCharacterEditor
             return;
         }
 
-        GameObject girl = (GameObject)PrefabUtility.InstantiatePrefab(girlPrefab);
+        GameObject girl = Object.Instantiate(girlPrefab, spawnPos, spawnRot);
         girl.name = "girl";
-        girl.transform.position = spawnPos;
-        girl.transform.rotation = spawnRot;
 
         // CharacterController
         var cc = girl.GetComponent<CharacterController>() ?? girl.AddComponent<CharacterController>();
@@ -190,12 +188,16 @@ public static class SetupGirlCharacterEditor
         }
         anim.avatar = girlAvatar;
 
-        // Material on SkinnedMeshRenderer
+        // Material on SkinnedMeshRenderer (Slot 0: Mat_Girl, Slot 1: Mat_Boy for pants)
         var smr = girl.GetComponentInChildren<SkinnedMeshRenderer>();
-        var mat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Mat_Girl.mat");
-        if (smr != null && mat != null)
+        var matGirl = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Mat_Girl.mat");
+        var matBoy = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Mat_Boy.mat");
+        if (smr != null)
         {
-            smr.sharedMaterial = mat;
+            if (matGirl != null && matBoy != null)
+                smr.sharedMaterials = new Material[] { matGirl, matBoy };
+            else if (matGirl != null)
+                smr.sharedMaterial = matGirl;
         }
 
         // Duplicate NamePlate_Billboard from boy if present
