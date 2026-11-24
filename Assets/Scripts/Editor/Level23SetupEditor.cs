@@ -22,6 +22,8 @@ public static class Level23SetupEditor
         EditorApplication.delayCall += () =>
         {
             if (Application.isPlaying) return;
+            string activeScene = EditorSceneManager.GetActiveScene().name;
+            if (string.IsNullOrEmpty(activeScene) || !activeScene.Contains("LECVEL")) return;
             SetupQuizTV();
             RestyleQuizUIToFigcraft();
             SetupPlayerNameBillboard();

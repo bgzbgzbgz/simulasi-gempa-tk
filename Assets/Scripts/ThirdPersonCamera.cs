@@ -129,11 +129,19 @@ public class ThirdPersonCamera : MonoBehaviour
         targetController = target != null ? target.GetComponent<CharacterController>() : null;
     }
 
+    public void SetTarget(Transform newTarget)
+    {
+        target = newTarget;
+        targetController = target != null ? target.GetComponent<CharacterController>() : null;
+    }
+
     private void LateUpdate()
     {
-        if (target == null)
+        if (target == null || !target.gameObject.activeInHierarchy)
         {
-            return;
+            var activePlayer = Object.FindFirstObjectByType<BoyController>();
+            if (activePlayer != null) SetTarget(activePlayer.transform);
+            else return;
         }
 
         HandleZoomInput();
