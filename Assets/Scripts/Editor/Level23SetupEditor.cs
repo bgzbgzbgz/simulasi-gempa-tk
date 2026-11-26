@@ -22,6 +22,8 @@ public static class Level23SetupEditor
         EditorApplication.delayCall += () =>
         {
             if (Application.isPlaying) return;
+            string activeScene = EditorSceneManager.GetActiveScene().name;
+            if (string.IsNullOrEmpty(activeScene) || !activeScene.Contains("LECVEL")) return;
             SetupQuizTV();
             RestyleQuizUIToFigcraft();
             SetupPlayerNameBillboard();
@@ -29,12 +31,13 @@ public static class Level23SetupEditor
             SetupEarthquakeEffect(false);
             SetupPauseCameraSlider();
             SetupHUDPauseButton();
+            RestyleHoldProgressAndBuGuruHUD();
             RestyleLevelCompletePopup();
             RestyleFinalScorePopup();
             SetupChevronArrowsAndStars(false);
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             EditorSceneManager.SaveOpenScenes();
-            Debug.Log("[Level23SetupEditor] Auto-setup Kuis TV, Player Name, Kamera, Efek Gempa, Pause HUD, & Figcraft Popups berhasil!");
+            Debug.Log("[Level23SetupEditor] Auto-setup Kuis TV, Player Name, Kamera, Efek Gempa, Pause HUD, & Word UI Popups berhasil!");
         };
     }
 
@@ -431,8 +434,6 @@ public static class Level23SetupEditor
     [MenuItem("Tools/Simulasi Gempa/Restyle Quiz UI to Figcraft")]
     public static void RestyleQuizUIToFigcraft()
     {
-        // Sprites are already configured as 2D Sprites in project
-
         Level1QuizManager quizManager = Object.FindFirstObjectByType<Level1QuizManager>(FindObjectsInactive.Include);
         GameObject panelQuiz = quizManager != null ? quizManager.gameObject : null;
         if (panelQuiz == null)
@@ -450,31 +451,30 @@ public static class Level23SetupEditor
             return;
         }
 
-        Undo.RecordObject(panelQuiz, "Restyle Quiz UI to Figcraft");
+        Undo.RecordObject(panelQuiz, "Restyle Quiz UI to Word High-Fidelity");
         panelQuiz.SetActive(true);
 
-        Font defaultFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Fredoka-Variable.ttf")
-            ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") 
-            ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
+        Font defaultFont = GetProjectFont();
+        Sprite spRoundedFill = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_fill.png");
+        Sprite spKnob = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+
+        Color colDarkInk = new Color(0.09f, 0.13f, 0.24f);
+        Color colCream = new Color(1.00f, 0.984f, 0.922f);
+        Color colBorderSubtle = new Color(0.80f, 0.84f, 0.89f);
+        Color colGreen = new Color(0.13f, 0.77f, 0.36f);
+        Color colBlue = new Color(0.01f, 0.52f, 0.78f);
 
         RectTransform rtPanel = panelQuiz.GetComponent<RectTransform>();
-        if (rtPanel != null)
-        {
-            rtPanel.anchorMin = Vector2.zero;
-            rtPanel.anchorMax = Vector2.one;
-            rtPanel.offsetMin = Vector2.zero;
-            rtPanel.offsetMax = Vector2.zero;
-        }
+        if (rtPanel != null) SetFullStretch(rtPanel);
 
-        Image panelImg = panelQuiz.GetComponent<Image>();
-        if (panelImg == null) panelImg = panelQuiz.AddComponent<Image>();
-        panelImg.color = new Color(0.08f, 0.11f, 0.18f, 0.72f); // Dark translucent backdrop
+        Image panelImg = panelQuiz.GetComponent<Image>() ?? panelQuiz.AddComponent<Image>();
+        panelImg.color = new Color(0.06f, 0.09f, 0.17f, 0.72f);
 
         // -------------------------------------------------------------
-        // 1. BU GURU FLOATING CARD (SLIDE IN DARI KIRI)
+        // 1. BU GURU CARD (KIRI)
         // -------------------------------------------------------------
         Transform tGuru = panelQuiz.transform.Find("Card_BuGuru");
-        GameObject cardGuru = tGuru != null ? tGuru.gameObject : new GameObject("Card_BuGuru", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Outline));
+        GameObject cardGuru = tGuru != null ? tGuru.gameObject : new GameObject("Card_BuGuru", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         if (tGuru == null)
         {
             cardGuru.transform.SetParent(panelQuiz.transform, false);
@@ -483,131 +483,84 @@ public static class Level23SetupEditor
         Undo.RecordObject(cardGuru, "Setup Card Bu Guru");
 
         RectTransform rtGuru = cardGuru.GetComponent<RectTransform>();
-        rtGuru.anchorMin = new Vector2(0f, 0.5f);
-        rtGuru.anchorMax = new Vector2(0f, 0.5f);
+        rtGuru.anchorMin = rtGuru.anchorMax = new Vector2(0f, 0.5f);
         rtGuru.pivot = new Vector2(0f, 0.5f);
-        rtGuru.anchoredPosition = new Vector2(35f, 50f);
-        rtGuru.sizeDelta = new Vector2(145f, 220f);
+        rtGuru.anchoredPosition = new Vector2(45f, 55f);
+        rtGuru.sizeDelta = new Vector2(240f, 360f);
 
-        Sprite sprCardSubtle = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_card_subtle.png");
-        Image bgGuru = cardGuru.GetComponent<Image>() ?? cardGuru.AddComponent<Image>();
-        if (sprCardSubtle != null)
-        {
-            bgGuru.sprite = sprCardSubtle;
-            bgGuru.type = Image.Type.Sliced;
-            bgGuru.color = Color.white;
-            var ol = cardGuru.GetComponent<Outline>();
-            if (ol != null) Object.DestroyImmediate(ol);
-        }
-        else
-        {
-            bgGuru.color = Color.white;
-            Outline outGuru = cardGuru.GetComponent<Outline>() ?? cardGuru.AddComponent<Outline>();
-            outGuru.effectColor = new Color(0.82f, 0.85f, 0.90f);
-            outGuru.effectDistance = new Vector2(2.5f, -2.5f);
-        }
+        ApplyBorderedCard(cardGuru, spRoundedFill, new Color(0.25f, 0.30f, 0.38f), Color.white, 5f);
 
-        // Avatar Circle
         Transform tCircle = cardGuru.transform.Find("Avatar_Circle");
         GameObject objCircle = tCircle != null ? tCircle.gameObject : new GameObject("Avatar_Circle", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         if (tCircle == null) objCircle.transform.SetParent(cardGuru.transform, false);
         RectTransform rtCircle = objCircle.GetComponent<RectTransform>();
-        rtCircle.anchorMin = new Vector2(0.5f, 0.5f);
-        rtCircle.anchorMax = new Vector2(0.5f, 0.5f);
-        rtCircle.anchoredPosition = new Vector2(0f, 42f);
-        rtCircle.sizeDelta = new Vector2(96f, 96f);
+        rtCircle.anchorMin = rtCircle.anchorMax = new Vector2(0.5f, 0.5f);
+        rtCircle.anchoredPosition = new Vector2(0f, 58f);
+        rtCircle.sizeDelta = new Vector2(146f, 146f);
         Image imgCircle = objCircle.GetComponent<Image>();
-        imgCircle.color = new Color(0.06f, 0.73f, 0.51f); // Emerald Green #10B981
+        if (spKnob != null) imgCircle.sprite = spKnob;
+        imgCircle.color = colGreen;
 
-        // Avatar Image
         Transform tAva = objCircle.transform.Find("Image_Avatar");
         GameObject objAva = tAva != null ? tAva.gameObject : new GameObject("Image_Avatar", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         if (tAva == null) objAva.transform.SetParent(objCircle.transform, false);
-        RectTransform rtAva = objAva.GetComponent<RectTransform>();
-        rtAva.anchorMin = Vector2.zero;
-        rtAva.anchorMax = Vector2.one;
-        rtAva.offsetMin = Vector2.zero;
-        rtAva.offsetMax = Vector2.zero;
+        SetFullStretch(objAva.GetComponent<RectTransform>(), 8f);
         Image imgAva = objAva.GetComponent<Image>();
         imgAva.sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/avatar_guru.png");
         imgAva.color = Color.white;
         imgAva.preserveAspect = true;
 
-        // Text Bu Guru
         Transform tName = cardGuru.transform.Find("Text_Name");
         GameObject objName = tName != null ? tName.gameObject : new GameObject("Text_Name", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
         if (tName == null) objName.transform.SetParent(cardGuru.transform, false);
         RectTransform rtName = objName.GetComponent<RectTransform>();
-        rtName.anchorMin = new Vector2(0.5f, 0.5f);
-        rtName.anchorMax = new Vector2(0.5f, 0.5f);
-        rtName.anchoredPosition = new Vector2(0f, -22f);
-        rtName.sizeDelta = new Vector2(130f, 26f);
+        rtName.anchorMin = rtName.anchorMax = new Vector2(0.5f, 0.5f);
+        rtName.anchoredPosition = new Vector2(0f, -52f);
+        rtName.sizeDelta = new Vector2(210f, 40f);
         Text txtName = objName.GetComponent<Text>();
         txtName.text = "Bu Guru";
         txtName.font = defaultFont;
-        txtName.fontSize = 17;
+        txtName.fontSize = 28;
         txtName.fontStyle = FontStyle.Bold;
         txtName.alignment = TextAnchor.MiddleCenter;
-        txtName.color = new Color(0.06f, 0.09f, 0.16f);
+        txtName.color = colDarkInk;
 
-        // Icon Speaker
+        // Speaker graphic (replaces broken Unicode emoji)
         Transform tSpeaker = cardGuru.transform.Find("Icon_Speaker");
-        GameObject objSpeaker = tSpeaker != null ? tSpeaker.gameObject : new GameObject("Icon_Speaker", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+        GameObject objSpeaker = tSpeaker != null ? tSpeaker.gameObject : new GameObject("Icon_Speaker", typeof(RectTransform));
         if (tSpeaker == null) objSpeaker.transform.SetParent(cardGuru.transform, false);
+        Text legacySpeakerTxt = objSpeaker.GetComponent<Text>();
+        if (legacySpeakerTxt != null) Object.DestroyImmediate(legacySpeakerTxt);
+        CanvasRenderer legacySpeakerCr = objSpeaker.GetComponent<CanvasRenderer>();
+        if (legacySpeakerCr != null && objSpeaker.GetComponent<Image>() == null) Object.DestroyImmediate(legacySpeakerCr);
         RectTransform rtSpeaker = objSpeaker.GetComponent<RectTransform>();
-        rtSpeaker.anchorMin = new Vector2(0.5f, 0.5f);
-        rtSpeaker.anchorMax = new Vector2(0.5f, 0.5f);
-        rtSpeaker.anchoredPosition = new Vector2(0f, -50f);
-        rtSpeaker.sizeDelta = new Vector2(50f, 26f);
-        Text txtSpeaker = objSpeaker.GetComponent<Text>();
-        txtSpeaker.text = "🔊";
-        txtSpeaker.font = defaultFont;
-        txtSpeaker.fontSize = 18;
-        txtSpeaker.alignment = TextAnchor.MiddleCenter;
-        txtSpeaker.color = new Color(0.2f, 0.25f, 0.35f);
+        rtSpeaker.anchorMin = rtSpeaker.anchorMax = new Vector2(0.5f, 0.5f);
+        rtSpeaker.anchoredPosition = new Vector2(0f, -108f);
+        rtSpeaker.sizeDelta = new Vector2(46f, 34f);
+        BuildSpeakerShape(objSpeaker.transform, new Color(0.50f, 0.58f, 0.68f));
 
         // -------------------------------------------------------------
-        // 2. CARD QUIZ (NOTEBOOK LOOSE LEAF)
+        // 2. CARD QUIZ (BUKU TULIS KREM SESUAI TABEL 3.7 NO. 4)
         // -------------------------------------------------------------
         Transform tQuiz = panelQuiz.transform.Find("Card_Quiz");
-        GameObject cardQuiz = tQuiz != null ? tQuiz.gameObject : new GameObject("Card_Quiz", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Outline));
+        GameObject cardQuiz = tQuiz != null ? tQuiz.gameObject : new GameObject("Card_Quiz", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         if (tQuiz == null) cardQuiz.transform.SetParent(panelQuiz.transform, false);
         Undo.RecordObject(cardQuiz, "Setup Card Quiz Notebook");
 
         RectTransform rtQuiz = cardQuiz.GetComponent<RectTransform>();
-        rtQuiz.anchorMin = new Vector2(0.5f, 0.5f);
-        rtQuiz.anchorMax = new Vector2(0.5f, 0.5f);
+        rtQuiz.anchorMin = rtQuiz.anchorMax = new Vector2(0.5f, 0.5f);
         rtQuiz.pivot = new Vector2(0.5f, 0.5f);
-        rtQuiz.anchoredPosition = new Vector2(70f, 0f);
-        rtQuiz.sizeDelta = new Vector2(1420f, 820f); // 3/4 Layar (1080p canvas)
+        rtQuiz.anchoredPosition = new Vector2(145f, 0f);
+        rtQuiz.sizeDelta = new Vector2(1460f, 900f);
 
-        Sprite sprCardQuiz = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_card_parchment.png");
-        Image bgQuiz = cardQuiz.GetComponent<Image>() ?? cardQuiz.AddComponent<Image>();
-        if (sprCardQuiz != null)
-        {
-            bgQuiz.sprite = sprCardQuiz;
-            bgQuiz.type = Image.Type.Sliced;
-            bgQuiz.color = Color.white;
-            var ol = cardQuiz.GetComponent<Outline>();
-            if (ol != null) Object.DestroyImmediate(ol);
-        }
-        else
-        {
-            bgQuiz.color = Color.white;
-            Outline outQuiz = cardQuiz.GetComponent<Outline>() ?? cardQuiz.AddComponent<Outline>();
-            outQuiz.effectColor = new Color(0.82f, 0.85f, 0.90f);
-            outQuiz.effectDistance = new Vector2(3.5f, -3.5f);
-        }
+        ApplyBorderedCard(cardQuiz, spRoundedFill, colBorderSubtle, colCream, 5f);
 
         // 6 Binder Holes
         Transform tHoles = cardQuiz.transform.Find("Binder_Holes");
         GameObject objHoles = tHoles != null ? tHoles.gameObject : new GameObject("Binder_Holes", typeof(RectTransform));
         if (tHoles == null) objHoles.transform.SetParent(cardQuiz.transform, false);
-        RectTransform rtHoles = objHoles.GetComponent<RectTransform>();
-        rtHoles.anchorMin = Vector2.zero;
-        rtHoles.anchorMax = Vector2.one;
-        rtHoles.offsetMin = Vector2.zero;
-        rtHoles.offsetMax = Vector2.zero;
+        SetFullStretch(objHoles.GetComponent<RectTransform>());
+        objHoles.transform.SetSiblingIndex(1);
 
         for (int i = 0; i < 6; i++)
         {
@@ -615,129 +568,119 @@ public static class Level23SetupEditor
             GameObject objHole = tHole != null ? tHole.gameObject : new GameObject($"Hole_{i}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             if (tHole == null) objHole.transform.SetParent(objHoles.transform, false);
             RectTransform rtHole = objHole.GetComponent<RectTransform>();
-            rtHole.anchorMin = new Vector2(0.5f, 0.5f);
-            rtHole.anchorMax = new Vector2(0.5f, 0.5f);
-            rtHole.anchoredPosition = new Vector2(-675f, 280f - i * 110f);
-            rtHole.sizeDelta = new Vector2(24f, 24f);
+            rtHole.anchorMin = rtHole.anchorMax = new Vector2(0.5f, 0.5f);
+            rtHole.anchoredPosition = new Vector2(-682f, 325f - i * 130f);
+            rtHole.sizeDelta = new Vector2(30f, 30f);
             Image imgHole = objHole.GetComponent<Image>();
-            imgHole.color = new Color(0.78f, 0.82f, 0.88f);
+            if (spKnob != null) imgHole.sprite = spKnob;
+            imgHole.color = new Color(0.62f, 0.67f, 0.74f);
+            imgHole.raycastTarget = false;
         }
 
         // Red Margin Line
         Transform tLine = cardQuiz.transform.Find("Margin_Line_Red");
         GameObject objLine = tLine != null ? tLine.gameObject : new GameObject("Margin_Line_Red", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         if (tLine == null) objLine.transform.SetParent(cardQuiz.transform, false);
+        objLine.transform.SetSiblingIndex(2);
         RectTransform rtLine = objLine.GetComponent<RectTransform>();
-        rtLine.anchorMin = new Vector2(0.5f, 0.5f);
-        rtLine.anchorMax = new Vector2(0.5f, 0.5f);
-        rtLine.anchoredPosition = new Vector2(-640f, 0f);
-        rtLine.sizeDelta = new Vector2(3f, 780f);
+        rtLine.anchorMin = rtLine.anchorMax = new Vector2(0.5f, 0.5f);
+        rtLine.anchoredPosition = new Vector2(-635f, 0f);
+        rtLine.sizeDelta = new Vector2(4f, 840f);
         Image imgLine = objLine.GetComponent<Image>();
-        imgLine.color = new Color(0.94f, 0.27f, 0.27f, 0.75f); // Red margin #EF4444
+        imgLine.color = new Color(0.94f, 0.27f, 0.27f, 0.85f);
+        imgLine.raycastTarget = false;
 
         // Question Prompt
-        Transform tPrompt = cardQuiz.transform.Find("Question_Prompt");
-        if (tPrompt == null) tPrompt = cardQuiz.transform.Find("Text_Prompt");
+        Transform tPrompt = cardQuiz.transform.Find("Question_Prompt") ?? cardQuiz.transform.Find("Text_Prompt");
         GameObject objPrompt = tPrompt != null ? tPrompt.gameObject : new GameObject("Question_Prompt", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
         objPrompt.name = "Question_Prompt";
         if (tPrompt == null) objPrompt.transform.SetParent(cardQuiz.transform, false);
         RectTransform rtPrompt = objPrompt.GetComponent<RectTransform>();
-        rtPrompt.anchorMin = new Vector2(0.5f, 0.5f);
-        rtPrompt.anchorMax = new Vector2(0.5f, 0.5f);
-        rtPrompt.anchoredPosition = new Vector2(25f, 310f);
-        rtPrompt.sizeDelta = new Vector2(1150f, 75f);
+        rtPrompt.anchorMin = rtPrompt.anchorMax = new Vector2(0.5f, 0.5f);
+        rtPrompt.anchoredPosition = new Vector2(35f, 345f);
+        rtPrompt.sizeDelta = new Vector2(1200f, 90f);
         Text txtPrompt = objPrompt.GetComponent<Text>();
-        txtPrompt.text = "Perhatikan ketiga gambar rumah! Rumah manakah yang sedang terkena bahaya?";
+        txtPrompt.text = "Rumah manakah yang sedang terkena bahaya gempa bumi?";
         txtPrompt.font = defaultFont;
-        txtPrompt.fontSize = 28;
+        txtPrompt.fontSize = 36;
         txtPrompt.fontStyle = FontStyle.Bold;
         txtPrompt.alignment = TextAnchor.MiddleCenter;
-        txtPrompt.color = new Color(0.09f, 0.13f, 0.24f);
+        txtPrompt.color = colDarkInk;
 
-        // Feedback Text
-        Transform tFeedback = cardQuiz.transform.Find("FeedbackText");
-        if (tFeedback == null) tFeedback = cardQuiz.transform.Find("Text_Feedback");
+        // Feedback Text (Biru ajakan di atas tombol Pilih)
+        Transform tFeedback = cardQuiz.transform.Find("FeedbackText") ?? cardQuiz.transform.Find("Text_Feedback");
         GameObject objFeedback = tFeedback != null ? tFeedback.gameObject : new GameObject("FeedbackText", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
         objFeedback.name = "FeedbackText";
         if (tFeedback == null) objFeedback.transform.SetParent(cardQuiz.transform, false);
         RectTransform rtFeedback = objFeedback.GetComponent<RectTransform>();
-        rtFeedback.anchorMin = new Vector2(0.5f, 0.5f);
-        rtFeedback.anchorMax = new Vector2(0.5f, 0.5f);
-        rtFeedback.anchoredPosition = new Vector2(25f, -225f);
-        rtFeedback.sizeDelta = new Vector2(1150f, 40f);
+        rtFeedback.anchorMin = rtFeedback.anchorMax = new Vector2(0.5f, 0.5f);
+        rtFeedback.anchoredPosition = new Vector2(35f, -240f);
+        rtFeedback.sizeDelta = new Vector2(1200f, 48f);
         Text txtFeedback = objFeedback.GetComponent<Text>();
-        txtFeedback.text = "";
+        txtFeedback.text = "Pilih salah satu gambar lalu tekan tombol Pilih!";
         txtFeedback.font = defaultFont;
-        txtFeedback.fontSize = 22;
+        txtFeedback.fontSize = 26;
         txtFeedback.fontStyle = FontStyle.Bold;
         txtFeedback.alignment = TextAnchor.MiddleCenter;
+        txtFeedback.color = colBlue;
 
         // -------------------------------------------------------------
-        // 3. 3 POLAROID OPTION CARDS WITH YELLOW TAPE
+        // 3. 3 POLAROID OPTION CARDS (CRISP ROUNDED BORDER + SELOTIP KUNING)
         // -------------------------------------------------------------
-        float[] posX = new float[] { -400f, 25f, 450f };
-        float[] tapeRot = new float[] { -3.5f, 1.5f, 3.5f };
+        float[] posX = new float[] { -390f, 35f, 460f };
         Button[] btns = new Button[3];
         Image[] imgs = new Image[3];
         Text[] txts = new Text[3];
-        Outline[] outlines = new Outline[3];
+        Image[] borders = new Image[3];
 
         for (int i = 0; i < 3; i++)
         {
             Transform tOpt = cardQuiz.transform.Find($"Btn_Option_{i}");
-            GameObject objOpt = tOpt != null ? tOpt.gameObject : new GameObject($"Btn_Option_{i}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(Outline));
+            GameObject objOpt = tOpt != null ? tOpt.gameObject : new GameObject($"Btn_Option_{i}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
             if (tOpt == null) objOpt.transform.SetParent(cardQuiz.transform, false);
             Undo.RecordObject(objOpt, $"Setup Option {i}");
 
             RectTransform rtOpt = objOpt.GetComponent<RectTransform>();
-            rtOpt.anchorMin = new Vector2(0.5f, 0.5f);
-            rtOpt.anchorMax = new Vector2(0.5f, 0.5f);
-            rtOpt.anchoredPosition = new Vector2(posX[i], 35f);
-            rtOpt.sizeDelta = new Vector2(370f, 390f);
+            rtOpt.anchorMin = rtOpt.anchorMax = new Vector2(0.5f, 0.5f);
+            rtOpt.anchoredPosition = new Vector2(posX[i], 45f);
+            rtOpt.sizeDelta = new Vector2(385f, 430f);
 
-            Sprite sprBtnWhite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_btn_white.png");
-            Image cardImg = objOpt.GetComponent<Image>() ?? objOpt.AddComponent<Image>();
-            if (sprBtnWhite != null)
-            {
-                cardImg.sprite = sprBtnWhite;
-                cardImg.type = Image.Type.Sliced;
-                cardImg.color = Color.white;
-            }
-            else
-            {
-                cardImg.color = Color.white;
-            }
-            Outline cardOut = objOpt.GetComponent<Outline>() ?? objOpt.AddComponent<Outline>();
-            cardOut.effectColor = new Color(0.85f, 0.88f, 0.92f);
-            cardOut.effectDistance = new Vector2(3.5f, -3.5f);
-            outlines[i] = cardOut;
+            var oldOl = objOpt.GetComponent<Outline>();
+            if (oldOl != null) Object.DestroyImmediate(oldOl);
+
+            ApplyBorderedCard(objOpt, spRoundedFill, colBorderSubtle, Color.white, 6f);
+            Image borderImg = objOpt.GetComponent<Image>();
+            borderImg.raycastTarget = true;
+            borders[i] = borderImg;
             btns[i] = objOpt.GetComponent<Button>() ?? objOpt.AddComponent<Button>();
+            btns[i].targetGraphic = borderImg;
+            btns[i].transition = Selectable.Transition.None;
 
             // Yellow Masking Tape
             Transform tTape = objOpt.transform.Find("Tape_Sticker");
             GameObject objTape = tTape != null ? tTape.gameObject : new GameObject("Tape_Sticker", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             if (tTape == null) objTape.transform.SetParent(objOpt.transform, false);
             RectTransform rtTape = objTape.GetComponent<RectTransform>();
-            rtTape.anchorMin = new Vector2(0.5f, 0.5f);
-            rtTape.anchorMax = new Vector2(0.5f, 0.5f);
-            rtTape.anchoredPosition = new Vector2(0f, 195f);
-            rtTape.sizeDelta = new Vector2(110f, 30f);
-            rtTape.localEulerAngles = new Vector3(0f, 0f, tapeRot[i]);
+            rtTape.anchorMin = rtTape.anchorMax = new Vector2(0.5f, 0.5f);
+            rtTape.anchoredPosition = new Vector2(0f, 214f);
+            rtTape.sizeDelta = new Vector2(140f, 38f);
+            rtTape.localEulerAngles = Vector3.zero;
             Image imgTape = objTape.GetComponent<Image>();
-            imgTape.color = new Color(0.99f, 0.94f, 0.54f, 0.88f); // Pastel yellow tape
+            imgTape.color = new Color(0.99f, 0.90f, 0.35f, 0.92f);
+            imgTape.raycastTarget = false;
 
-            // Image Display (Photo Frame)
+            // Image Display
             Transform tDisp = objOpt.transform.Find("Image_Display");
             GameObject objDisp = tDisp != null ? tDisp.gameObject : new GameObject("Image_Display", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(AnimatedImageUI));
             if (tDisp == null) objDisp.transform.SetParent(objOpt.transform, false);
             RectTransform rtDisp = objDisp.GetComponent<RectTransform>();
-            rtDisp.anchorMin = new Vector2(0.5f, 0.5f);
-            rtDisp.anchorMax = new Vector2(0.5f, 0.5f);
-            rtDisp.anchoredPosition = new Vector2(0f, 25f);
-            rtDisp.sizeDelta = new Vector2(330f, 280f);
+            rtDisp.anchorMin = rtDisp.anchorMax = new Vector2(0.5f, 0.5f);
+            rtDisp.anchoredPosition = new Vector2(0f, 30f);
+            rtDisp.sizeDelta = new Vector2(325f, 285f);
             Image imgDisp = objDisp.GetComponent<Image>() ?? objDisp.AddComponent<Image>();
             imgDisp.preserveAspect = true;
             imgDisp.enabled = (imgDisp.sprite != null);
+            imgDisp.raycastTarget = false;
             imgs[i] = imgDisp;
 
             // Text Label
@@ -745,17 +688,23 @@ public static class Level23SetupEditor
             GameObject objLbl = tLbl != null ? tLbl.gameObject : new GameObject("Text_Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
             if (tLbl == null) objLbl.transform.SetParent(objOpt.transform, false);
             RectTransform rtLbl = objLbl.GetComponent<RectTransform>();
-            rtLbl.anchorMin = new Vector2(0.5f, 0.5f);
-            rtLbl.anchorMax = new Vector2(0.5f, 0.5f);
-            rtLbl.anchoredPosition = new Vector2(0f, -155f);
-            rtLbl.sizeDelta = new Vector2(330f, 36f);
+            rtLbl.anchorMin = rtLbl.anchorMax = new Vector2(0.5f, 0.5f);
+            rtLbl.anchoredPosition = new Vector2(0f, -162f);
+            rtLbl.sizeDelta = new Vector2(340f, 48f);
             Text txtLbl = objLbl.GetComponent<Text>();
             txtLbl.font = defaultFont;
-            txtLbl.fontSize = 20;
+            txtLbl.fontSize = 25;
             txtLbl.fontStyle = FontStyle.Bold;
             txtLbl.alignment = TextAnchor.MiddleCenter;
-            txtLbl.color = new Color(0.28f, 0.35f, 0.45f);
+            txtLbl.color = colDarkInk;
+            txtLbl.raycastTarget = false;
             txts[i] = txtLbl;
+
+            // Hide any legacy Text child
+            Transform legacyTxt = objOpt.transform.Find("Text");
+            if (legacyTxt != null) legacyTxt.gameObject.SetActive(false);
+
+            objTape.transform.SetAsLastSibling();
         }
 
         // -------------------------------------------------------------
@@ -765,15 +714,14 @@ public static class Level23SetupEditor
         if (oldBtnConfirm != null) oldBtnConfirm.SetParent(cardQuiz.transform, false);
 
         Transform tConfirm = cardQuiz.transform.Find("Btn_ConfirmAnswer");
-        GameObject objConfirm = tConfirm != null ? tConfirm.gameObject : new GameObject("Btn_ConfirmAnswer", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(Outline));
+        GameObject objConfirm = tConfirm != null ? tConfirm.gameObject : new GameObject("Btn_ConfirmAnswer", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         if (tConfirm == null) objConfirm.transform.SetParent(cardQuiz.transform, false);
         Undo.RecordObject(objConfirm, "Setup Confirm Button");
 
         RectTransform rtConfirm = objConfirm.GetComponent<RectTransform>();
-        rtConfirm.anchorMin = new Vector2(0.5f, 0.5f);
-        rtConfirm.anchorMax = new Vector2(0.5f, 0.5f);
-        rtConfirm.anchoredPosition = new Vector2(25f, -315f);
-        rtConfirm.sizeDelta = new Vector2(240f, 68f);
+        rtConfirm.anchorMin = rtConfirm.anchorMax = new Vector2(0.5f, 0.5f);
+        rtConfirm.anchoredPosition = new Vector2(35f, -342f);
+        rtConfirm.sizeDelta = new Vector2(420f, 92f);
 
         Sprite sprBtnGreen = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_btn_green.png");
         Image imgConfirm = objConfirm.GetComponent<Image>() ?? objConfirm.AddComponent<Image>();
@@ -782,29 +730,22 @@ public static class Level23SetupEditor
             imgConfirm.sprite = sprBtnGreen;
             imgConfirm.type = Image.Type.Sliced;
             imgConfirm.color = Color.white;
-            var ol = objConfirm.GetComponent<Outline>();
-            if (ol != null) Object.DestroyImmediate(ol);
         }
         else
         {
-            imgConfirm.color = new Color(0.13f, 0.77f, 0.36f);
-            Outline outConfirm = objConfirm.GetComponent<Outline>() ?? objConfirm.AddComponent<Outline>();
-            outConfirm.effectColor = new Color(0.08f, 0.5f, 0.24f);
-            outConfirm.effectDistance = new Vector2(2f, -2f);
+            imgConfirm.color = colGreen;
         }
+        var confirmOl = objConfirm.GetComponent<Outline>();
+        if (confirmOl != null) Object.DestroyImmediate(confirmOl);
 
         Transform tConfirmTxt = objConfirm.transform.Find("Text");
         GameObject objConfirmTxt = tConfirmTxt != null ? tConfirmTxt.gameObject : new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
         if (tConfirmTxt == null) objConfirmTxt.transform.SetParent(objConfirm.transform, false);
-        RectTransform rtConfirmTxt = objConfirmTxt.GetComponent<RectTransform>();
-        rtConfirmTxt.anchorMin = Vector2.zero;
-        rtConfirmTxt.anchorMax = Vector2.one;
-        rtConfirmTxt.offsetMin = Vector2.zero;
-        rtConfirmTxt.offsetMax = Vector2.zero;
+        SetFullStretch(objConfirmTxt.GetComponent<RectTransform>());
         Text txtConfirm = objConfirmTxt.GetComponent<Text>();
         txtConfirm.text = "Pilih";
         txtConfirm.font = defaultFont;
-        txtConfirm.fontSize = 24;
+        txtConfirm.fontSize = 32;
         txtConfirm.fontStyle = FontStyle.Bold;
         txtConfirm.alignment = TextAnchor.MiddleCenter;
         txtConfirm.color = Color.white;
@@ -814,7 +755,7 @@ public static class Level23SetupEditor
         // -------------------------------------------------------------
         if (quizManager == null) quizManager = panelQuiz.GetComponent<Level1QuizManager>();
         if (quizManager == null) quizManager = panelQuiz.AddComponent<Level1QuizManager>();
-        Undo.RecordObject(quizManager, "Connect Figcraft Quiz Elements");
+        Undo.RecordObject(quizManager, "Connect Word Quiz Elements");
 
         quizManager.quizPanel = panelQuiz;
         quizManager.promptText = txtPrompt;
@@ -824,24 +765,24 @@ public static class Level23SetupEditor
         quizManager.optionButtons = btns;
         quizManager.optionImages = imgs;
         quizManager.optionTexts = txts;
-        quizManager.optionCardOutlines = outlines;
+        quizManager.optionCardBorderImages = borders;
+        quizManager.optionCardOutlines = new Outline[3];
 
         quizManager.SetupDefaultQuestions();
         quizManager.AutoAssignAssetsInEditor();
 
-        // Sembunyikan panel kuis saat idle di editor
         panelQuiz.SetActive(false);
 
         EditorUtility.SetDirty(panelQuiz);
         EditorUtility.SetDirty(quizManager);
-        
+
         if (!Application.isPlaying)
         {
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             EditorSceneManager.SaveOpenScenes();
         }
 
-        Debug.Log("[Level23SetupEditor] Restyle Quiz UI to Figcraft notebook style berhasil!");
+        Debug.Log("[Level23SetupEditor] Restyle Quiz UI sesuai rancangan Word berhasil!");
     }
 
     // ==========================================
@@ -1094,109 +1035,156 @@ public static class Level23SetupEditor
         Transform card = mui.pausePanel.transform.Find("Card_Pause");
         if (card == null) return;
 
+        Font defaultFont = GetProjectFont();
+        Sprite spRoundedFill = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_fill.png");
+        Sprite spBtnYellow = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_btn_yellow.png");
+        Sprite spBtnGreen = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_btn_green.png");
+        Sprite spBtnWhite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_btn_white.png");
+
+        Color colDarkInk = new Color(0.10f, 0.14f, 0.22f);
+        Color colCream = new Color(1.00f, 0.984f, 0.922f);
+        Color colOrange = new Color(0.96f, 0.62f, 0.04f);
+        Color colGreen = new Color(0.13f, 0.77f, 0.36f);
+        Color colBlue = new Color(0.01f, 0.52f, 0.78f);
+
+        RectTransform rtPanel = mui.pausePanel.GetComponent<RectTransform>();
+        if (rtPanel != null) SetFullStretch(rtPanel);
+        Image backdrop = mui.pausePanel.GetComponent<Image>();
+        if (backdrop != null) backdrop.color = new Color(0.04f, 0.07f, 0.17f, 0.68f);
+
         RectTransform rtCard = card.GetComponent<RectTransform>();
         if (rtCard != null)
         {
-            rtCard.sizeDelta = new Vector2(680f, 490f);
+            rtCard.anchoredPosition = new Vector2(0f, -12f);
+            rtCard.sizeDelta = new Vector2(1420f, 860f);
         }
+        ApplyBorderedCard(card.gameObject, spRoundedFill, colOrange, colCream, 7f);
 
-        // Cari atau buat Slider_Camera
-        Transform tSlider = card.Find("Slider_CameraDistance");
-        Transform tLabel = card.Find("LabelCamera");
         Transform tSliderQuake = card.Find("Slider_EarthquakeIntensity");
+        if (tSliderQuake != null) Undo.DestroyObjectImmediate(tSliderQuake.gameObject);
         Transform tLabelQuake = card.Find("LabelEarthquake");
+        if (tLabelQuake != null) Undo.DestroyObjectImmediate(tLabelQuake.gameObject);
 
-        // Hapus Slider & Label Intensitas Gempa (setting dipindah sepenuhnya ke Unity Inspector)
-        if (tSliderQuake != null)
-        {
-            Undo.DestroyObjectImmediate(tSliderQuake.gameObject);
-            tSliderQuake = null;
-        }
-        if (tLabelQuake != null)
-        {
-            Undo.DestroyObjectImmediate(tLabelQuake.gameObject);
-            tLabelQuake = null;
-        }
-
-        // Reposisi tombol & elemen agar rapi dan selaras dengan Figcraft
+        // Ribbon Header
         RectTransform rtRibbon = card.Find("Ribbon_Header") as RectTransform;
-        RectTransform rtLblBGM = card.Find("LabelBGM") as RectTransform;
-        RectTransform rtSldBGM = card.Find("Slider_BGM") as RectTransform;
-        RectTransform rtLblSFX = card.Find("LabelSFX") as RectTransform;
-        RectTransform rtSldSFX = card.Find("Slider_SFX") as RectTransform;
-        RectTransform rtBtnResume = card.Find("Btn_Resume") as RectTransform;
-        RectTransform rtBtnUlangi = card.Find("Btn_Ulangi") as RectTransform;
-        RectTransform rtBtnMenu = card.Find("Btn_MenuUtama") as RectTransform;
-
-        if (rtRibbon != null) rtRibbon.anchoredPosition = new Vector2(0f, 25f);
-        if (rtLblBGM != null) rtLblBGM.anchoredPosition = new Vector2(-120f, 150f);
-        if (rtSldBGM != null) rtSldBGM.anchoredPosition = new Vector2(30f, 125f);
-        if (rtLblSFX != null) rtLblSFX.anchoredPosition = new Vector2(-120f, 85f);
-        if (rtSldSFX != null) rtSldSFX.anchoredPosition = new Vector2(30f, 60f);
-
-        // 1. Label & Slider Camera (Zoom)
-        if (tLabel == null && rtLblSFX != null)
+        if (rtRibbon != null)
         {
-            GameObject labelObj = Object.Instantiate(rtLblSFX.gameObject, card, false);
-            labelObj.name = "LabelCamera";
-            tLabel = labelObj.transform;
-            Text txt = labelObj.GetComponent<Text>();
-            if (txt != null) txt.text = "JARAK KAMERA (ZOOM)";
-        }
-        if (tLabel != null)
-        {
-            RectTransform rt = tLabel as RectTransform;
-            rt.anchoredPosition = new Vector2(-120f, 20f);
-            Text txt = tLabel.GetComponent<Text>();
-            if (txt != null) txt.text = "JARAK KAMERA (ZOOM)";
+            rtRibbon.anchorMin = rtRibbon.anchorMax = new Vector2(0.5f, 1f);
+            rtRibbon.pivot = new Vector2(0.5f, 0.5f);
+            rtRibbon.anchoredPosition = Vector2.zero;
+            rtRibbon.sizeDelta = new Vector2(820f, 86f);
+            var rOl = rtRibbon.GetComponent<Outline>();
+            if (rOl != null) Object.DestroyImmediate(rOl);
+            Image rImg = rtRibbon.GetComponent<Image>();
+            if (rImg != null && spBtnYellow != null) { rImg.sprite = spBtnYellow; rImg.type = Image.Type.Sliced; rImg.color = Color.white; }
+            Text rTxt = rtRibbon.Find("Text")?.GetComponent<Text>();
+            if (rTxt != null) { rTxt.text = "PENGATURAN AUDIO & JEDA"; rTxt.font = defaultFont; rTxt.fontSize = 34; rTxt.fontStyle = FontStyle.Bold; rTxt.color = colDarkInk; }
         }
 
-        if (tSlider == null && rtSldSFX != null)
+        // BGM & SFX Rows
+        StylePauseLabel(card.Find("LabelBGM"), "Musik Latar (BGM)", defaultFont, colDarkInk, new Vector2(-340f, 225f), new Vector2(540f, 54f));
+        Slider sldBgm = card.Find("Slider_BGM")?.GetComponent<Slider>();
+        if (sldBgm != null)
         {
-            GameObject sliderObj = Object.Instantiate(rtSldSFX.gameObject, card, false);
+            StyleCapsuleSlider(sldBgm, spRoundedFill, colGreen, new Vector2(260f, 225f), new Vector2(620f, 44f));
+            mui.pauseBgmSlider = sldBgm;
+        }
+
+        StylePauseLabel(card.Find("LabelSFX"), "Efek Suara (SFX)", defaultFont, colDarkInk, new Vector2(-340f, 115f), new Vector2(540f, 54f));
+        Slider sldSfx = card.Find("Slider_SFX")?.GetComponent<Slider>();
+        if (sldSfx != null)
+        {
+            StyleCapsuleSlider(sldSfx, spRoundedFill, colGreen, new Vector2(260f, 115f), new Vector2(620f, 44f));
+            mui.pauseSfxSlider = sldSfx;
+        }
+
+        // Voice Over Pill Row
+        Transform tLblVo = card.Find("LabelVO");
+        GameObject lblVoObj = tLblVo != null ? tLblVo.gameObject : new GameObject("LabelVO", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+        if (tLblVo == null) lblVoObj.transform.SetParent(card, false);
+        StylePauseLabel(lblVoObj.transform, "Suara Bu Guru (Voice Over)", defaultFont, colDarkInk, new Vector2(-340f, 5f), new Vector2(560f, 54f));
+
+        Transform tVoTg = card.Find("Toggle_VoiceOver");
+        GameObject voTgObj = tVoTg != null ? tVoTg.gameObject : new GameObject("Toggle_VoiceOver", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Toggle));
+        if (tVoTg == null) voTgObj.transform.SetParent(card, false);
+        RectTransform rtVoTg = voTgObj.GetComponent<RectTransform>();
+        rtVoTg.anchorMin = rtVoTg.anchorMax = new Vector2(0.5f, 0.5f);
+        rtVoTg.anchoredPosition = new Vector2(445f, 5f);
+        rtVoTg.sizeDelta = new Vector2(240f, 78f);
+        Image voBg = voTgObj.GetComponent<Image>();
+        if (spRoundedFill != null) { voBg.sprite = spRoundedFill; voBg.type = Image.Type.Sliced; }
+        voBg.color = colGreen;
+        Toggle voToggle = voTgObj.GetComponent<Toggle>() ?? voTgObj.AddComponent<Toggle>();
+        voToggle.transition = Selectable.Transition.None;
+        voToggle.targetGraphic = voBg;
+
+        Transform tVoTxt = voTgObj.transform.Find("Text");
+        GameObject voTxtObj = tVoTxt != null ? tVoTxt.gameObject : new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+        if (tVoTxt == null) voTxtObj.transform.SetParent(voTgObj.transform, false);
+        RectTransform rtVoTxt = voTxtObj.GetComponent<RectTransform>();
+        rtVoTxt.anchorMin = Vector2.zero; rtVoTxt.anchorMax = Vector2.one;
+        rtVoTxt.offsetMin = Vector2.zero; rtVoTxt.offsetMax = new Vector2(-32f, 0f);
+        Text voTxt = voTxtObj.GetComponent<Text>();
+        voTxt.text = "AKTIF";
+        voTxt.font = defaultFont;
+        voTxt.fontSize = 28;
+        voTxt.fontStyle = FontStyle.Bold;
+        voTxt.alignment = TextAnchor.MiddleCenter;
+        voTxt.color = Color.white;
+        voTxt.raycastTarget = false;
+
+        GameObject voChk = BuildCheckIcon("CheckIcon", voTgObj.transform, new Vector2(58f, 0f), Color.white);
+        mui.pauseVoiceOverToggle = voToggle;
+        mui.pauseVoiceOverBg = voBg;
+        mui.pauseVoiceOverText = voTxt;
+        mui.pauseVoiceOverCheckIcon = voChk;
+
+        // Camera Distance Row
+        Transform tLabel = card.Find("LabelCamera");
+        GameObject labelObj = tLabel != null ? tLabel.gameObject : new GameObject("LabelCamera", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+        if (tLabel == null) labelObj.transform.SetParent(card, false);
+        StylePauseLabel(labelObj.transform, "Jarak Kamera (Zoom)", defaultFont, colDarkInk, new Vector2(-340f, -105f), new Vector2(540f, 54f));
+
+        Transform tSlider = card.Find("Slider_CameraDistance");
+        if (tSlider == null && sldSfx != null)
+        {
+            GameObject sliderObj = Object.Instantiate(sldSfx.gameObject, card, false);
             sliderObj.name = "Slider_CameraDistance";
             tSlider = sliderObj.transform;
         }
         if (tSlider != null)
         {
-            RectTransform rt = tSlider as RectTransform;
-            rt.anchoredPosition = new Vector2(30f, -5f);
-            Slider sld = tSlider.GetComponent<Slider>();
-            if (sld != null)
+            Slider sldCam = tSlider.GetComponent<Slider>();
+            if (sldCam != null)
             {
-                sld.minValue = 1.2f;
-                sld.maxValue = 5.0f;
-                sld.value = 2.6f;
-                mui.pauseCameraDistanceSlider = sld;
+                StyleCapsuleSlider(sldCam, spRoundedFill, colBlue, new Vector2(230f, -105f), new Vector2(540f, 44f));
+                sldCam.minValue = 1.2f;
+                sldCam.maxValue = 5.0f;
+                sldCam.value = 3.5f;
+                mui.pauseCameraDistanceSlider = sldCam;
             }
-        }
-
-        Transform tVal = tSlider != null ? tSlider.Find("Text_Value") : null;
-        if (tVal == null && tSlider != null)
-        {
-            GameObject valObj = new GameObject("Text_Value", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-            valObj.transform.SetParent(tSlider, false);
-            tVal = valObj.transform;
+            Transform tVal = tSlider.Find("Text_Value");
+            GameObject valObj = tVal != null ? tVal.gameObject : new GameObject("Text_Value", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+            if (tVal == null) valObj.transform.SetParent(tSlider, false);
             RectTransform rtVal = valObj.GetComponent<RectTransform>();
-            rtVal.anchorMin = new Vector2(1f, 0.5f);
-            rtVal.anchorMax = new Vector2(1f, 0.5f);
+            rtVal.anchorMin = rtVal.anchorMax = new Vector2(1f, 0.5f);
             rtVal.pivot = new Vector2(0f, 0.5f);
-            rtVal.anchoredPosition = new Vector2(15f, 0f);
-            rtVal.sizeDelta = new Vector2(60f, 30f);
-
+            rtVal.anchoredPosition = new Vector2(16f, 0f);
+            rtVal.sizeDelta = new Vector2(100f, 44f);
             Text txtVal = valObj.GetComponent<Text>();
-            txtVal.font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Fredoka-Variable.ttf") ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
-            txtVal.fontSize = 16;
+            txtVal.font = defaultFont;
+            txtVal.fontSize = 26;
             txtVal.fontStyle = FontStyle.Bold;
-            txtVal.color = new Color(0.15f, 0.2f, 0.3f);
+            txtVal.color = colDarkInk;
             txtVal.alignment = TextAnchor.MiddleLeft;
-            txtVal.text = "2.6m";
+            txtVal.text = "3.5m";
             mui.pauseCameraDistanceValueText = txtVal;
         }
 
-        if (rtBtnResume != null) rtBtnResume.anchoredPosition = new Vector2(0f, -75f);
-        if (rtBtnUlangi != null) rtBtnUlangi.anchoredPosition = new Vector2(-120f, -145f);
-        if (rtBtnMenu != null) rtBtnMenu.anchoredPosition = new Vector2(120f, -145f);
+        // Bottom Buttons
+        StyleActionButton(card.Find("Btn_Resume"), "LANJUTKAN BERMAIN", spBtnGreen, spRoundedFill, colGreen, Color.white, 28, defaultFont, new Vector2(0f, -225f), new Vector2(580f, 82f));
+        StyleActionButton(card.Find("Btn_Ulangi"), "Ulangi", spBtnWhite, spRoundedFill, Color.white, colDarkInk, 26, defaultFont, new Vector2(-190f, -330f), new Vector2(340f, 78f));
+        StyleActionButton(card.Find("Btn_MenuUtama"), "Menu Utama", spBtnWhite, spRoundedFill, Color.white, colDarkInk, 26, defaultFont, new Vector2(190f, -330f), new Vector2(340f, 78f));
 
         EditorUtility.SetDirty(card.gameObject);
         EditorUtility.SetDirty(mui);
@@ -1217,136 +1205,243 @@ public static class Level23SetupEditor
         }
         if (hudTop == null) return;
 
-        // 1. MissionBanner di Kiri Atas (di atas Avatar Bu Guru)
+        Font defaultFont = GetProjectFont();
+        Sprite spRoundedFill = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_fill.png");
+        Sprite sprHudDark = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_hud_dark.png");
+        Sprite sprPause = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_btn_orange.png");
+
+        // 1. MissionBanner kiri atas
         Transform banner = hudTop.Find("MissionBanner");
         if (banner != null)
         {
             RectTransform rtBanner = banner.GetComponent<RectTransform>();
             if (rtBanner != null)
             {
-                rtBanner.anchorMin = new Vector2(0f, 1f);
-                rtBanner.anchorMax = new Vector2(0f, 1f);
-                rtBanner.pivot = new Vector2(0f, 1f);
-                rtBanner.anchoredPosition = new Vector2(25f, -25f);
-                rtBanner.sizeDelta = new Vector2(520f, 75f);
+                rtBanner.anchorMin = rtBanner.anchorMax = rtBanner.pivot = new Vector2(0f, 1f);
+                rtBanner.anchoredPosition = new Vector2(35f, -30f);
+                rtBanner.sizeDelta = new Vector2(880f, 88f);
             }
-
+            if (sprHudDark != null)
+            {
+                var bImg = banner.GetComponent<Image>();
+                if (bImg != null) { bImg.sprite = sprHudDark; bImg.type = Image.Type.Sliced; bImg.color = Color.white; }
+            }
             Transform tInstr = banner.Find("InstructionText");
             if (tInstr != null)
             {
                 RectTransform rtInstr = tInstr.GetComponent<RectTransform>();
                 if (rtInstr != null)
                 {
-                    rtInstr.anchorMin = Vector2.zero;
-                    rtInstr.anchorMax = Vector2.one;
-                    rtInstr.offsetMin = new Vector2(20f, 6f);
-                    rtInstr.offsetMax = new Vector2(-20f, -6f);
+                    rtInstr.anchorMin = Vector2.zero; rtInstr.anchorMax = Vector2.one;
+                    rtInstr.offsetMin = new Vector2(26f, 8f); rtInstr.offsetMax = new Vector2(-26f, -8f);
                 }
                 Text txtInstr = tInstr.GetComponent<Text>();
                 if (txtInstr != null)
                 {
+                    txtInstr.font = defaultFont;
                     txtInstr.alignment = TextAnchor.MiddleLeft;
-                    txtInstr.fontSize = 17;
+                    txtInstr.fontSize = 24;
                     txtInstr.fontStyle = FontStyle.Bold;
                     txtInstr.color = Color.white;
                 }
             }
         }
 
-        // 2. TimerBadge di Kanan Atas
+        // 2. TimerBadge kanan atas
         Transform timerBadge = hudTop.Find("TimerBadge");
         if (timerBadge != null)
         {
             RectTransform rtTimer = timerBadge.GetComponent<RectTransform>();
             if (rtTimer != null)
             {
-                rtTimer.anchorMin = new Vector2(1f, 1f);
-                rtTimer.anchorMax = new Vector2(1f, 1f);
-                rtTimer.pivot = new Vector2(1f, 1f);
-                rtTimer.anchoredPosition = new Vector2(-115f, -25f);
-                rtTimer.sizeDelta = new Vector2(130f, 65f);
+                rtTimer.anchorMin = rtTimer.anchorMax = rtTimer.pivot = new Vector2(1f, 1f);
+                rtTimer.anchoredPosition = new Vector2(-150f, -30f);
+                rtTimer.sizeDelta = new Vector2(180f, 88f);
             }
-        }
-
-        // 3. Tombol Pause di Pojok Kanan Atas
-        Transform tPause = hudTop.Find("Btn_Pause");
-        GameObject objPause = tPause != null ? tPause.gameObject : new GameObject("Btn_Pause", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(Outline));
-        if (tPause == null) objPause.transform.SetParent(hudTop, false);
-
-        RectTransform rtBtn = objPause.GetComponent<RectTransform>();
-        rtBtn.anchorMin = new Vector2(1f, 1f);
-        rtBtn.anchorMax = new Vector2(1f, 1f);
-        rtBtn.pivot = new Vector2(1f, 1f);
-        rtBtn.anchoredPosition = new Vector2(-25f, -25f);
-        rtBtn.sizeDelta = new Vector2(65f, 65f);
-
-        Sprite sprPause = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_btn_orange.png");
-        Image imgBtn = objPause.GetComponent<Image>() ?? objPause.AddComponent<Image>();
-        if (sprPause != null)
-        {
-            imgBtn.sprite = sprPause;
-            imgBtn.type = Image.Type.Sliced;
-            imgBtn.color = Color.white;
-            var ol = objPause.GetComponent<Outline>();
-            if (ol != null) Object.DestroyImmediate(ol);
-        }
-        else
-        {
-            imgBtn.color = new Color(0.98f, 0.65f, 0.11f); // Figcraft Amber / Orange
-            Outline outBtn = objPause.GetComponent<Outline>() ?? objPause.AddComponent<Outline>();
-            outBtn.effectColor = new Color(0.75f, 0.45f, 0.05f);
-            outBtn.effectDistance = new Vector2(2f, -2f);
-        }
-
-        // Pastikan Banner dan Timer juga rounded
-        Sprite sprHudDark = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_hud_dark.png");
-        if (sprHudDark != null)
-        {
-            if (banner != null)
-            {
-                var bImg = banner.GetComponent<Image>();
-                if (bImg != null) { bImg.sprite = sprHudDark; bImg.type = Image.Type.Sliced; bImg.color = Color.white; }
-            }
-            if (timerBadge != null)
+            if (sprHudDark != null)
             {
                 var tImg = timerBadge.GetComponent<Image>();
                 if (tImg != null) { tImg.sprite = sprHudDark; tImg.type = Image.Type.Sliced; tImg.color = Color.white; }
             }
+            Text txtTimer = timerBadge.Find("TimerText")?.GetComponent<Text>();
+            if (txtTimer != null)
+            {
+                txtTimer.font = defaultFont;
+                txtTimer.fontSize = 32;
+                txtTimer.fontStyle = FontStyle.Bold;
+                txtTimer.color = new Color(0.98f, 0.75f, 0.14f);
+            }
         }
 
-        // Matikan Image background HUD_Top agar tidak memunculkan bar hitam panjang memotong layar
+        // 3. Tombol Pause kanan atas dengan 2 bar putih (||) bebas glyph rusak
+        Transform tPause = hudTop.Find("Btn_Pause");
+        GameObject objPause = tPause != null ? tPause.gameObject : new GameObject("Btn_Pause", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        if (tPause == null) objPause.transform.SetParent(hudTop, false);
+
+        RectTransform rtBtn = objPause.GetComponent<RectTransform>();
+        rtBtn.anchorMin = rtBtn.anchorMax = rtBtn.pivot = new Vector2(1f, 1f);
+        rtBtn.anchoredPosition = new Vector2(-35f, -30f);
+        rtBtn.sizeDelta = new Vector2(92f, 92f);
+
+        Image imgBtn = objPause.GetComponent<Image>() ?? objPause.AddComponent<Image>();
+        var olPause = objPause.GetComponent<Outline>();
+        if (olPause != null) Object.DestroyImmediate(olPause);
+        if (sprPause != null) { imgBtn.sprite = sprPause; imgBtn.type = Image.Type.Sliced; imgBtn.color = Color.white; }
+        else imgBtn.color = new Color(0.98f, 0.65f, 0.11f);
+
         Image imgHudTop = hudTop.GetComponent<Image>();
-        if (imgHudTop != null)
-        {
-            imgHudTop.color = Color.clear;
-            imgHudTop.enabled = false;
-        }
+        if (imgHudTop != null) { imgHudTop.color = Color.clear; imgHudTop.enabled = false; }
 
         Transform tIcon = objPause.transform.Find("Text");
-        GameObject objIcon = tIcon != null ? tIcon.gameObject : new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-        if (tIcon == null) objIcon.transform.SetParent(objPause.transform, false);
+        if (tIcon != null)
+        {
+            Text txtIcon = tIcon.GetComponent<Text>();
+            if (txtIcon != null) txtIcon.text = "";
+        }
 
-        RectTransform rtIcon = objIcon.GetComponent<RectTransform>();
-        rtIcon.anchorMin = Vector2.zero;
-        rtIcon.anchorMax = Vector2.one;
-        rtIcon.offsetMin = Vector2.zero;
-        rtIcon.offsetMax = Vector2.zero;
-
-        Text txtIcon = objIcon.GetComponent<Text>();
-        txtIcon.text = "⏸";
-        txtIcon.font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Fredoka-Variable.ttf") ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
-        txtIcon.fontSize = 22;
-        txtIcon.fontStyle = FontStyle.Bold;
-        txtIcon.alignment = TextAnchor.MiddleCenter;
-        txtIcon.color = Color.white;
+        CreatePauseBar(objPause.transform, "PauseBar_L", spRoundedFill, new Vector2(-11f, 0f));
+        CreatePauseBar(objPause.transform, "PauseBar_R", spRoundedFill, new Vector2(11f, 0f));
 
         Button btn = objPause.GetComponent<Button>() ?? objPause.AddComponent<Button>();
-        btn.onClick.RemoveAllListeners();
-        btn.onClick.AddListener(mui.OpenPauseMenu);
-
+        if (btn.onClick.GetPersistentEventCount() == 0)
+        {
+            btn.onClick.RemoveAllListeners();
+            btn.onClick.AddListener(mui.OpenPauseMenu);
+        }
         mui.pauseButton = btn;
 
         EditorUtility.SetDirty(hudTop.gameObject);
+        EditorUtility.SetDirty(mui);
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+    }
+
+    public static void RestyleHoldProgressAndBuGuruHUD()
+    {
+        MissionUI mui = Object.FindFirstObjectByType<MissionUI>(FindObjectsInactive.Include);
+        if (mui == null) return;
+
+        Font defaultFont = GetProjectFont();
+        Sprite spRoundedFill = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_fill.png");
+        Sprite spKnob = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+
+        Color colGreen = new Color(0.13f, 0.77f, 0.36f);
+        Color colNavy = new Color(0.12f, 0.16f, 0.22f);
+        Color colRedBorder = new Color(0.94f, 0.27f, 0.24f);
+        Color colDarkRed = new Color(0.72f, 0.11f, 0.11f);
+
+        // 1. HoldProgressContainer (Tabel 3.7 No. 5: "Bertahan: 3.4 / 5.0 dtk")
+        GameObject holdObj = mui.holdProgressContainer ?? mui.transform.Find("HoldProgressContainer")?.gameObject;
+        if (holdObj != null)
+        {
+            RectTransform rtHold = holdObj.GetComponent<RectTransform>();
+            rtHold.anchorMin = rtHold.anchorMax = new Vector2(0.5f, 0f);
+            rtHold.pivot = new Vector2(0.5f, 0.5f);
+            rtHold.anchoredPosition = new Vector2(0f, 145f);
+            rtHold.sizeDelta = new Vector2(740f, 72f);
+
+            ApplyBorderedCard(holdObj, spRoundedFill, Color.white, colNavy, 4f);
+
+            Transform tSlider = holdObj.transform.Find("HoldSlider");
+            if (tSlider != null)
+            {
+                RectTransform rtSld = tSlider.GetComponent<RectTransform>();
+                SetFullStretch(rtSld, 6f);
+                Transform tFillArea = tSlider.Find("Fill Area");
+                if (tFillArea != null) SetFullStretch(tFillArea.GetComponent<RectTransform>());
+                Transform tFill = tFillArea != null ? tFillArea.Find("Fill") : null;
+                if (tFill != null)
+                {
+                    Image fillImg = tFill.GetComponent<Image>();
+                    if (fillImg != null)
+                    {
+                        if (spRoundedFill != null) { fillImg.sprite = spRoundedFill; fillImg.type = Image.Type.Sliced; }
+                        fillImg.color = colGreen;
+                    }
+                }
+            }
+
+            Transform tLabel = holdObj.transform.Find("HoldLabel");
+            if (tLabel != null)
+            {
+                tLabel.SetAsLastSibling();
+                SetFullStretch(tLabel.GetComponent<RectTransform>());
+                Text txtLabel = tLabel.GetComponent<Text>();
+                if (txtLabel != null)
+                {
+                    txtLabel.font = defaultFont;
+                    txtLabel.fontSize = 28;
+                    txtLabel.fontStyle = FontStyle.Bold;
+                    txtLabel.alignment = TextAnchor.MiddleCenter;
+                    txtLabel.color = Color.white;
+                    txtLabel.text = "Bertahan: 0.0 / 5.0 dtk";
+                    mui.holdProgressText = txtLabel;
+                }
+            }
+            mui.holdProgressContainer = holdObj;
+        }
+
+        // 2. HUD_BuGuru Toast (Tabel 3.7 No. 6: Pill putih border merah horizontal)
+        RectTransform rtToast = mui.buGuruHUD ?? mui.transform.Find("HUD_BuGuru")?.GetComponent<RectTransform>();
+        if (rtToast != null)
+        {
+            GameObject toastObj = rtToast.gameObject;
+            var oldOl = toastObj.GetComponent<Outline>();
+            if (oldOl != null) Object.DestroyImmediate(oldOl);
+
+            rtToast.anchorMin = rtToast.anchorMax = new Vector2(0f, 1f);
+            rtToast.pivot = new Vector2(0f, 1f);
+            rtToast.anchoredPosition = new Vector2(35f, -142f);
+            rtToast.sizeDelta = new Vector2(760f, 142f);
+
+            ApplyBorderedCard(toastObj, spRoundedFill, colRedBorder, Color.white, 6f);
+
+            Transform legacyName = toastObj.transform.Find("NameTxt");
+            if (legacyName != null) legacyName.gameObject.SetActive(false);
+            Transform legacyStatus = toastObj.transform.Find("StatusTxt");
+            if (legacyStatus != null) legacyStatus.gameObject.SetActive(false);
+
+            Transform tCircle = toastObj.transform.Find("AvatarCircle");
+            GameObject circleObj = tCircle != null ? tCircle.gameObject : new GameObject("AvatarCircle", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            if (tCircle == null) circleObj.transform.SetParent(toastObj.transform, false);
+            var oldCircleOl = circleObj.GetComponent<Outline>();
+            if (oldCircleOl != null) Object.DestroyImmediate(oldCircleOl);
+            RectTransform rtCircle = circleObj.GetComponent<RectTransform>();
+            rtCircle.anchorMin = rtCircle.anchorMax = new Vector2(0f, 0.5f);
+            rtCircle.pivot = new Vector2(0f, 0.5f);
+            rtCircle.anchoredPosition = new Vector2(24f, 0f);
+            rtCircle.sizeDelta = new Vector2(96f, 96f);
+            Image imgCircle = circleObj.GetComponent<Image>();
+            if (spKnob != null) imgCircle.sprite = spKnob;
+            imgCircle.color = colGreen;
+
+            Transform tPortrait = circleObj.transform.Find("Portrait");
+            GameObject portObj = tPortrait != null ? tPortrait.gameObject : new GameObject("Portrait", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            if (tPortrait == null) portObj.transform.SetParent(circleObj.transform, false);
+            SetFullStretch(portObj.GetComponent<RectTransform>(), 6f);
+            Image imgPort = portObj.GetComponent<Image>();
+            imgPort.sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/avatar_guru.png");
+            imgPort.color = Color.white;
+            imgPort.preserveAspect = true;
+            mui.buGuruAvatarImg = imgPort;
+
+            Transform tSpeech = toastObj.transform.Find("SpeechText");
+            GameObject speechObj = tSpeech != null ? tSpeech.gameObject : new GameObject("SpeechText", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+            if (tSpeech == null) speechObj.transform.SetParent(toastObj.transform, false);
+            RectTransform rtSpeech = speechObj.GetComponent<RectTransform>();
+            rtSpeech.anchorMin = Vector2.zero; rtSpeech.anchorMax = Vector2.one;
+            rtSpeech.offsetMin = new Vector2(142f, 14f); rtSpeech.offsetMax = new Vector2(-24f, -14f);
+            Text txtSpeech = speechObj.GetComponent<Text>();
+            txtSpeech.font = defaultFont;
+            txtSpeech.fontSize = 28;
+            txtSpeech.fontStyle = FontStyle.Bold;
+            txtSpeech.alignment = TextAnchor.MiddleLeft;
+            txtSpeech.color = colDarkRed;
+            txtSpeech.text = "Gempa Susulan! Merunduk dulu ya!";
+            mui.buGuruSpeechText = txtSpeech;
+
+            toastObj.SetActive(false);
+        }
+
         EditorUtility.SetDirty(mui);
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
     }
@@ -1965,12 +2060,18 @@ public static class Level23SetupEditor
             starsProp.InsertArrayElementAtIndex(i);
             starsProp.GetArrayElementAtIndex(i).objectReferenceValue = starList[i];
         }
-        soGuide.FindProperty("arrowMaterial").objectReferenceValue = matChevron;
-        soGuide.FindProperty("lineWidth").floatValue = 0.75f;
-        soGuide.FindProperty("heightAboveGround").floatValue = 0.22f;
-        soGuide.FindProperty("arrowDensity").floatValue = 0.35f;
-        soGuide.FindProperty("arrowScrollSpeed").floatValue = 2.2f;
-        soGuide.FindProperty("waypointReachRadius").floatValue = 2.2f;
+        var pMat = soGuide.FindProperty("arrowMaterial");
+        if (pMat != null) pMat.objectReferenceValue = matChevron;
+        var pWidth = soGuide.FindProperty("lineWidth");
+        if (pWidth != null) pWidth.floatValue = 0.75f;
+        var pHeight = soGuide.FindProperty("heightAboveGround");
+        if (pHeight != null) pHeight.floatValue = 0.22f;
+        var pDensity = soGuide.FindProperty("arrowDensity");
+        if (pDensity != null) pDensity.floatValue = 0.35f;
+        var pSpeed = soGuide.FindProperty("arrowScrollSpeed");
+        if (pSpeed != null) pSpeed.floatValue = 2.2f;
+        var pReach = soGuide.FindProperty("waypointReachRadius");
+        if (pReach != null) pReach.floatValue = 2.2f;
         soGuide.ApplyModifiedProperties();
 
         if (!Application.isPlaying)
@@ -2048,211 +2149,112 @@ public static class Level23SetupEditor
         MissionUI mui = Object.FindFirstObjectByType<MissionUI>(FindObjectsInactive.Include);
         if (mui == null) return;
 
-        GameObject panel = mui.levelCompletePanel;
-        if (panel == null)
-        {
-            Transform t = mui.transform.Find("Popup_LevelComplete") ?? mui.transform.parent?.Find("Popup_LevelComplete");
-            if (t != null) panel = t.gameObject;
-        }
+        GameObject panel = mui.levelCompletePanel ?? (mui.transform.Find("Popup_LevelComplete") ?? mui.transform.parent?.Find("Popup_LevelComplete"))?.gameObject;
         if (panel == null) return;
 
         Undo.RecordObject(panel, "Restyle Level Complete Popup");
         panel.SetActive(true);
 
-        Font defaultFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Fredoka-Variable.ttf")
-            ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") 
-            ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
-
-        Sprite sprCardParchment = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_card_parchment.png");
+        Font defaultFont = GetProjectFont();
+        Sprite spRoundedFill = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_fill.png");
         Sprite sprBtnYellow = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_btn_yellow.png");
         Sprite sprBtnGreen = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_btn_green.png");
-        Sprite sprBtnWhite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_btn_white.png");
-        Sprite sprCardSubtle = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_card_subtle.png");
 
-        // 1. Backdrop
+        Color colDarkInk = new Color(0.09f, 0.13f, 0.24f);
+        Color colCream = new Color(1.00f, 0.984f, 0.922f);
+        Color colOrange = new Color(0.96f, 0.62f, 0.04f);
+        Color colGreen = new Color(0.13f, 0.77f, 0.36f);
+
         RectTransform rtPanel = panel.GetComponent<RectTransform>();
-        if (rtPanel != null)
-        {
-            rtPanel.anchorMin = Vector2.zero;
-            rtPanel.anchorMax = Vector2.one;
-            rtPanel.offsetMin = Vector2.zero;
-            rtPanel.offsetMax = Vector2.zero;
-        }
+        if (rtPanel != null) SetFullStretch(rtPanel);
         Image imgBackdrop = panel.GetComponent<Image>() ?? panel.AddComponent<Image>();
-        imgBackdrop.color = new Color(0.04f, 0.07f, 0.17f, 0.65f);
+        imgBackdrop.color = new Color(0.04f, 0.07f, 0.17f, 0.68f);
 
-        // 2. Card (Clean White Wide Card)
         Transform tCard = panel.transform.Find("Card");
-        GameObject objCard = tCard != null ? tCard.gameObject : new GameObject("Card", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Outline));
+        GameObject objCard = tCard != null ? tCard.gameObject : new GameObject("Card", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         if (tCard == null) objCard.transform.SetParent(panel.transform, false);
         Undo.RecordObject(objCard, "Setup Card");
 
         RectTransform rtCard = objCard.GetComponent<RectTransform>();
-        rtCard.anchorMin = new Vector2(0.5f, 0.5f);
-        rtCard.anchorMax = new Vector2(0.5f, 0.5f);
-        rtCard.pivot = new Vector2(0.5f, 0.5f);
-        rtCard.anchoredPosition = Vector2.zero;
-        rtCard.sizeDelta = new Vector2(780f, 450f);
+        rtCard.anchorMin = rtCard.anchorMax = rtCard.pivot = new Vector2(0.5f, 0.5f);
+        rtCard.anchoredPosition = new Vector2(0f, -10f);
+        rtCard.sizeDelta = new Vector2(1240f, 700f);
 
-        Image imgCard = objCard.GetComponent<Image>() ?? objCard.AddComponent<Image>();
-        if (sprCardParchment != null)
-        {
-            imgCard.sprite = sprCardParchment;
-            imgCard.type = Image.Type.Sliced;
-            imgCard.color = Color.white;
-            var ol = objCard.GetComponent<Outline>();
-            if (ol != null) Object.DestroyImmediate(ol);
-        }
-        else
-        {
-            imgCard.color = new Color(1f, 0.988f, 0.945f); // Warm cream white
-            Outline outCard = objCard.GetComponent<Outline>() ?? objCard.AddComponent<Outline>();
-            outCard.effectColor = new Color(0.85f, 0.88f, 0.92f);
-            outCard.effectDistance = new Vector2(3.5f, -3.5f);
-        }
+        ApplyBorderedCard(objCard, spRoundedFill, colOrange, colCream, 7f);
 
-        // 3. Header Ribbon (Gold / Orange Pill)
+        // Ribbon Header
         Transform tRibbon = objCard.transform.Find("Ribbon_Header");
-        GameObject objRibbon = tRibbon != null ? tRibbon.gameObject : new GameObject("Ribbon_Header", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Outline));
+        GameObject objRibbon = tRibbon != null ? tRibbon.gameObject : new GameObject("Ribbon_Header", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         if (tRibbon == null) objRibbon.transform.SetParent(objCard.transform, false);
+        var olRibbon = objRibbon.GetComponent<Outline>();
+        if (olRibbon != null) Object.DestroyImmediate(olRibbon);
 
         RectTransform rtRibbon = objRibbon.GetComponent<RectTransform>();
-        rtRibbon.anchorMin = new Vector2(0.5f, 1f);
-        rtRibbon.anchorMax = new Vector2(0.5f, 1f);
+        rtRibbon.anchorMin = rtRibbon.anchorMax = new Vector2(0.5f, 1f);
         rtRibbon.pivot = new Vector2(0.5f, 0.5f);
-        rtRibbon.anchoredPosition = new Vector2(0f, 0f);
-        rtRibbon.sizeDelta = new Vector2(480f, 56f);
+        rtRibbon.anchoredPosition = Vector2.zero;
+        rtRibbon.sizeDelta = new Vector2(720f, 84f);
 
         Image imgRibbon = objRibbon.GetComponent<Image>() ?? objRibbon.AddComponent<Image>();
-        if (sprBtnYellow != null)
-        {
-            imgRibbon.sprite = sprBtnYellow;
-            imgRibbon.type = Image.Type.Sliced;
-            imgRibbon.color = Color.white;
-            var ol = objRibbon.GetComponent<Outline>();
-            if (ol != null) Object.DestroyImmediate(ol);
-        }
-        else
-        {
-            imgRibbon.color = new Color(0.96f, 0.62f, 0.04f); // Warm Gold #F59E0B
-            Outline outRibbon = objRibbon.GetComponent<Outline>() ?? objRibbon.AddComponent<Outline>();
-            outRibbon.effectColor = new Color(0.79f, 0.51f, 0.03f);
-            outRibbon.effectDistance = new Vector2(2f, -2f);
-        }
+        if (sprBtnYellow != null) { imgRibbon.sprite = sprBtnYellow; imgRibbon.type = Image.Type.Sliced; imgRibbon.color = Color.white; }
+        else imgRibbon.color = colOrange;
 
         Transform tRibbonTxt = objRibbon.transform.Find("Text");
         GameObject objRibbonTxt = tRibbonTxt != null ? tRibbonTxt.gameObject : new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
         if (tRibbonTxt == null) objRibbonTxt.transform.SetParent(objRibbon.transform, false);
-        RectTransform rtRibbonTxt = objRibbonTxt.GetComponent<RectTransform>();
-        rtRibbonTxt.anchorMin = Vector2.zero;
-        rtRibbonTxt.anchorMax = Vector2.one;
-        rtRibbonTxt.offsetMin = Vector2.zero;
-        rtRibbonTxt.offsetMax = Vector2.zero;
+        SetFullStretch(objRibbonTxt.GetComponent<RectTransform>());
         Text txtRibbon = objRibbonTxt.GetComponent<Text>();
-        txtRibbon.text = "🎉 TAHAP SELESAI! 🎉";
+        txtRibbon.text = "TAHAP SELESAI!";
         txtRibbon.font = defaultFont;
-        txtRibbon.fontSize = 22;
+        txtRibbon.fontSize = 34;
         txtRibbon.fontStyle = FontStyle.Bold;
         txtRibbon.alignment = TextAnchor.MiddleCenter;
-        txtRibbon.color = Color.white;
+        txtRibbon.color = colDarkInk;
 
-        // 3b. Celebratory Stars
-        Transform tStars = objCard.transform.Find("Stars");
-        GameObject objStars = tStars != null ? tStars.gameObject : new GameObject("Stars", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-        if (tStars == null) objStars.transform.SetParent(objCard.transform, false);
-        RectTransform rtStars = objStars.GetComponent<RectTransform>();
-        rtStars.anchorMin = new Vector2(0.5f, 0.5f);
-        rtStars.anchorMax = new Vector2(0.5f, 0.5f);
-        rtStars.anchoredPosition = new Vector2(0f, 135f);
-        rtStars.sizeDelta = new Vector2(350f, 50f);
-        Text txtStars = objStars.GetComponent<Text>();
-        txtStars.text = "⭐  ⭐  ⭐";
-        txtStars.font = defaultFont;
-        txtStars.fontSize = 40;
-        txtStars.fontStyle = FontStyle.Bold;
-        txtStars.alignment = TextAnchor.MiddleCenter;
-        txtStars.color = new Color(0.96f, 0.62f, 0.04f);
+        // Clear legacy emoji Stars Text & build crisp star sprites
+        Transform tStarsLegacy = objCard.transform.Find("Stars");
+        if (tStarsLegacy != null) tStarsLegacy.gameObject.SetActive(false);
+        BuildStarRow(objCard.transform, "StarsRow", new Vector2(0f, 185f), 80f, 110f);
 
-        // 4. Title (Nama & Ucapan Hebat)
+        // Title
         Transform tTitle = objCard.transform.Find("Title");
         GameObject objTitle = tTitle != null ? tTitle.gameObject : new GameObject("Title", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
         if (tTitle == null) objTitle.transform.SetParent(objCard.transform, false);
         RectTransform rtTitle = objTitle.GetComponent<RectTransform>();
-        rtTitle.anchorMin = new Vector2(0.5f, 0.5f);
-        rtTitle.anchorMax = new Vector2(0.5f, 0.5f);
-        rtTitle.anchoredPosition = new Vector2(0f, 75f);
-        rtTitle.sizeDelta = new Vector2(680f, 50f);
+        rtTitle.anchorMin = rtTitle.anchorMax = new Vector2(0.5f, 0.5f);
+        rtTitle.anchoredPosition = new Vector2(0f, 80f);
+        rtTitle.sizeDelta = new Vector2(1080f, 64f);
         Text txtTitle = objTitle.GetComponent<Text>();
         txtTitle.text = "HEBAT SEKALI, ANANDA!";
         txtTitle.font = defaultFont;
-        txtTitle.fontSize = 28;
+        txtTitle.fontSize = 38;
         txtTitle.fontStyle = FontStyle.Bold;
         txtTitle.alignment = TextAnchor.MiddleCenter;
-        txtTitle.color = new Color(0.06f, 0.09f, 0.16f); // Dark Charcoal #0F172A
+        txtTitle.color = colDarkInk;
 
-        // 5. Desc
+        // Desc
         Transform tDesc = objCard.transform.Find("Desc");
         GameObject objDesc = tDesc != null ? tDesc.gameObject : new GameObject("Desc", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
         if (tDesc == null) objDesc.transform.SetParent(objCard.transform, false);
         RectTransform rtDesc = objDesc.GetComponent<RectTransform>();
-        rtDesc.anchorMin = new Vector2(0.5f, 0.5f);
-        rtDesc.anchorMax = new Vector2(0.5f, 0.5f);
-        rtDesc.anchoredPosition = new Vector2(0f, -5f);
-        rtDesc.sizeDelta = new Vector2(660f, 65f);
+        rtDesc.anchorMin = rtDesc.anchorMax = new Vector2(0.5f, 0.5f);
+        rtDesc.anchoredPosition = new Vector2(0f, -20f);
+        rtDesc.sizeDelta = new Vector2(1040f, 110f);
         Text txtDesc = objDesc.GetComponent<Text>();
         txtDesc.text = "Bagus sekali! Tahap ini berhasil kamu selesaikan dengan tertib dan mandiri!";
         txtDesc.font = defaultFont;
-        txtDesc.fontSize = 18;
+        txtDesc.fontSize = 26;
         txtDesc.fontStyle = FontStyle.Normal;
         txtDesc.alignment = TextAnchor.MiddleCenter;
         txtDesc.color = new Color(0.20f, 0.26f, 0.35f);
 
-        // 6. Next Level Button
+        // Next Level Button
         Transform tBtn = objCard.transform.Find("Btn_NextLevel");
-        GameObject objBtn = tBtn != null ? tBtn.gameObject : new GameObject("Btn_NextLevel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(Outline));
+        GameObject objBtn = tBtn != null ? tBtn.gameObject : new GameObject("Btn_NextLevel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         if (tBtn == null) objBtn.transform.SetParent(objCard.transform, false);
-        RectTransform rtBtn = objBtn.GetComponent<RectTransform>();
-        rtBtn.anchorMin = new Vector2(0.5f, 0.5f);
-        rtBtn.anchorMax = new Vector2(0.5f, 0.5f);
-        rtBtn.anchoredPosition = new Vector2(0f, -115f);
-        rtBtn.sizeDelta = new Vector2(460f, 64f);
-
-        Image imgBtn = objBtn.GetComponent<Image>() ?? objBtn.AddComponent<Image>();
-        if (sprBtnGreen != null)
-        {
-            imgBtn.sprite = sprBtnGreen;
-            imgBtn.type = Image.Type.Sliced;
-            imgBtn.color = Color.white;
-            var ol = objBtn.GetComponent<Outline>();
-            if (ol != null) Object.DestroyImmediate(ol);
-        }
-        else
-        {
-            imgBtn.color = new Color(0.13f, 0.77f, 0.36f); // Vibrant Emerald Green #22C55E
-            Outline outBtn = objBtn.GetComponent<Outline>() ?? objBtn.AddComponent<Outline>();
-            outBtn.effectColor = new Color(0.08f, 0.64f, 0.29f);
-            outBtn.effectDistance = new Vector2(2.5f, -2.5f);
-        }
-
+        StyleActionButton(objBtn.transform, "LANJUT KE LEVEL BERIKUTNYA", sprBtnGreen, spRoundedFill, colGreen, Color.white, 28, defaultFont, new Vector2(0f, -195f), new Vector2(620f, 92f));
         Button btnNext = objBtn.GetComponent<Button>() ?? objBtn.AddComponent<Button>();
 
-        Transform tBtnTxt = objBtn.transform.Find("Text");
-        GameObject objBtnTxt = tBtnTxt != null ? tBtnTxt.gameObject : new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-        if (tBtnTxt == null) objBtnTxt.transform.SetParent(objBtn.transform, false);
-        RectTransform rtBtnTxt = objBtnTxt.GetComponent<RectTransform>();
-        rtBtnTxt.anchorMin = Vector2.zero;
-        rtBtnTxt.anchorMax = Vector2.one;
-        rtBtnTxt.offsetMin = Vector2.zero;
-        rtBtnTxt.offsetMax = Vector2.zero;
-        Text txtBtn = objBtnTxt.GetComponent<Text>();
-        txtBtn.text = "LANJUT KE LEVEL BERIKUTNYA ▶";
-        txtBtn.font = defaultFont;
-        txtBtn.fontSize = 20;
-        txtBtn.fontStyle = FontStyle.Bold;
-        txtBtn.alignment = TextAnchor.MiddleCenter;
-        txtBtn.color = Color.white;
-
-        // Wire to MissionUI
         mui.levelCompletePanel = panel;
         mui.levelCompleteTitleText = txtTitle;
         mui.levelCompleteDescText = txtDesc;
@@ -2269,455 +2271,214 @@ public static class Level23SetupEditor
         MissionUI mui = Object.FindFirstObjectByType<MissionUI>(FindObjectsInactive.Include);
         if (mui == null) return;
 
-        GameObject panel = mui.finalScorePanel;
-        if (panel == null)
-        {
-            Transform t = mui.transform.Find("Popup_FinalScore") ?? mui.transform.parent?.Find("Popup_FinalScore");
-            if (t != null) panel = t.gameObject;
-        }
+        GameObject panel = mui.finalScorePanel ?? (mui.transform.Find("Popup_FinalScore") ?? mui.transform.parent?.Find("Popup_FinalScore"))?.gameObject;
         if (panel == null) return;
 
         Undo.RecordObject(panel, "Restyle Final Score Popup");
         panel.SetActive(true);
 
-        Font defaultFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Fredoka-Variable.ttf")
-            ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") 
-            ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
-
-        Sprite sprCardParchment = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_card_parchment.png");
+        Font defaultFont = GetProjectFont();
+        Sprite spRoundedFill = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_fill.png");
         Sprite sprBtnYellow = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_btn_yellow.png");
         Sprite sprBtnGreen = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_btn_green.png");
         Sprite sprBtnWhite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_btn_white.png");
-        Sprite sprCardSubtle = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/spr_ui_rounded_card_subtle.png");
 
-        // 1. Backdrop
+        Color colDarkInk = new Color(0.09f, 0.13f, 0.24f);
+        Color colCream = new Color(1.00f, 0.984f, 0.922f);
+        Color colOrange = new Color(0.96f, 0.62f, 0.04f);
+        Color colGreen = new Color(0.13f, 0.77f, 0.36f);
+        Color colSubtle = new Color(0.82f, 0.85f, 0.90f);
+
         RectTransform rtPanel = panel.GetComponent<RectTransform>();
-        if (rtPanel != null)
-        {
-            rtPanel.anchorMin = Vector2.zero;
-            rtPanel.anchorMax = Vector2.one;
-            rtPanel.offsetMin = Vector2.zero;
-            rtPanel.offsetMax = Vector2.zero;
-        }
+        if (rtPanel != null) SetFullStretch(rtPanel);
         Image imgBackdrop = panel.GetComponent<Image>() ?? panel.AddComponent<Image>();
-        imgBackdrop.color = new Color(0.04f, 0.07f, 0.17f, 0.65f);
+        imgBackdrop.color = new Color(0.04f, 0.07f, 0.17f, 0.70f);
 
-        // 2. Card (Clean White Wide Card)
         Transform tCard = panel.transform.Find("Card");
-        GameObject objCard = tCard != null ? tCard.gameObject : new GameObject("Card", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Outline));
+        GameObject objCard = tCard != null ? tCard.gameObject : new GameObject("Card", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         if (tCard == null) objCard.transform.SetParent(panel.transform, false);
         Undo.RecordObject(objCard, "Setup Card");
 
-        // Bersihkan child lama yang tidak terstruktur
         Transform oldTime = objCard.transform.Find("TimeText");
         if (oldTime != null) Object.DestroyImmediate(oldTime.gameObject);
         Transform oldEval = objCard.transform.Find("EvalText");
         if (oldEval != null) Object.DestroyImmediate(oldEval.gameObject);
 
         RectTransform rtCard = objCard.GetComponent<RectTransform>();
-        rtCard.anchorMin = new Vector2(0.5f, 0.5f);
-        rtCard.anchorMax = new Vector2(0.5f, 0.5f);
-        rtCard.pivot = new Vector2(0.5f, 0.5f);
-        rtCard.anchoredPosition = Vector2.zero;
-        rtCard.sizeDelta = new Vector2(980f, 630f);
+        rtCard.anchorMin = rtCard.anchorMax = rtCard.pivot = new Vector2(0.5f, 0.5f);
+        rtCard.anchoredPosition = new Vector2(0f, -10f);
+        rtCard.sizeDelta = new Vector2(1460f, 900f);
 
-        Image imgCard = objCard.GetComponent<Image>() ?? objCard.AddComponent<Image>();
-        if (sprCardParchment != null)
-        {
-            imgCard.sprite = sprCardParchment;
-            imgCard.type = Image.Type.Sliced;
-            imgCard.color = Color.white;
-            var ol = objCard.GetComponent<Outline>();
-            if (ol != null) Object.DestroyImmediate(ol);
-        }
-        else
-        {
-            imgCard.color = new Color(1f, 0.988f, 0.945f); // Warm cream white
-            Outline outCard = objCard.GetComponent<Outline>() ?? objCard.AddComponent<Outline>();
-            outCard.effectColor = new Color(0.85f, 0.88f, 0.92f);
-            outCard.effectDistance = new Vector2(3.5f, -3.5f);
-        }
+        ApplyBorderedCard(objCard, spRoundedFill, colOrange, colCream, 7f);
 
-        // 3. Header Ribbon (Blue Pill)
+        // Ribbon Header
         Transform tRibbon = objCard.transform.Find("Ribbon_Header");
-        GameObject objRibbon = tRibbon != null ? tRibbon.gameObject : new GameObject("Ribbon_Header", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Outline));
+        GameObject objRibbon = tRibbon != null ? tRibbon.gameObject : new GameObject("Ribbon_Header", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         if (tRibbon == null) objRibbon.transform.SetParent(objCard.transform, false);
+        var olRibbon = objRibbon.GetComponent<Outline>();
+        if (olRibbon != null) Object.DestroyImmediate(olRibbon);
 
         RectTransform rtRibbon = objRibbon.GetComponent<RectTransform>();
-        rtRibbon.anchorMin = new Vector2(0.5f, 1f);
-        rtRibbon.anchorMax = new Vector2(0.5f, 1f);
+        rtRibbon.anchorMin = rtRibbon.anchorMax = new Vector2(0.5f, 1f);
         rtRibbon.pivot = new Vector2(0.5f, 0.5f);
-        rtRibbon.anchoredPosition = new Vector2(0f, 0f);
-        rtRibbon.sizeDelta = new Vector2(580f, 54f);
+        rtRibbon.anchoredPosition = Vector2.zero;
+        rtRibbon.sizeDelta = new Vector2(800f, 88f);
 
         Image imgRibbon = objRibbon.GetComponent<Image>() ?? objRibbon.AddComponent<Image>();
-        if (sprBtnYellow != null)
-        {
-            imgRibbon.sprite = sprBtnYellow;
-            imgRibbon.type = Image.Type.Sliced;
-            imgRibbon.color = Color.white;
-            var ol = objRibbon.GetComponent<Outline>();
-            if (ol != null) Object.DestroyImmediate(ol);
-        }
-        else
-        {
-            imgRibbon.color = new Color(0.15f, 0.39f, 0.92f); // Royal Blue #2563EB
-            Outline outRibbon = objRibbon.GetComponent<Outline>() ?? objRibbon.AddComponent<Outline>();
-            outRibbon.effectColor = new Color(0.11f, 0.27f, 0.68f);
-            outRibbon.effectDistance = new Vector2(2f, -2f);
-        }
+        if (sprBtnYellow != null) { imgRibbon.sprite = sprBtnYellow; imgRibbon.type = Image.Type.Sliced; imgRibbon.color = Color.white; }
+        else imgRibbon.color = colOrange;
 
         Transform tRibbonTxt = objRibbon.transform.Find("Text");
         GameObject objRibbonTxt = tRibbonTxt != null ? tRibbonTxt.gameObject : new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
         if (tRibbonTxt == null) objRibbonTxt.transform.SetParent(objRibbon.transform, false);
-        RectTransform rtRibbonTxt = objRibbonTxt.GetComponent<RectTransform>();
-        rtRibbonTxt.anchorMin = Vector2.zero;
-        rtRibbonTxt.anchorMax = Vector2.one;
-        rtRibbonTxt.offsetMin = Vector2.zero;
-        rtRibbonTxt.offsetMax = Vector2.zero;
+        SetFullStretch(objRibbonTxt.GetComponent<RectTransform>());
         Text txtRibbon = objRibbonTxt.GetComponent<Text>();
-        txtRibbon.text = "🏆 RAPOR PAHLAWAN CILIK 🏆";
+        txtRibbon.text = "RAPOR PAHLAWAN CILIK";
         txtRibbon.font = defaultFont;
-        txtRibbon.fontSize = 20;
+        txtRibbon.fontSize = 34;
         txtRibbon.fontStyle = FontStyle.Bold;
         txtRibbon.alignment = TextAnchor.MiddleCenter;
         txtRibbon.color = Color.white;
 
-        // 4. Stars
-        Transform tStars = objCard.transform.Find("Stars");
-        GameObject objStars = tStars != null ? tStars.gameObject : new GameObject("Stars", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-        if (tStars == null) objStars.transform.SetParent(objCard.transform, false);
-        RectTransform rtStars = objStars.GetComponent<RectTransform>();
-        rtStars.anchorMin = new Vector2(0.5f, 0.5f);
-        rtStars.anchorMax = new Vector2(0.5f, 0.5f);
-        rtStars.anchoredPosition = new Vector2(0f, 222f);
-        rtStars.sizeDelta = new Vector2(320f, 44f);
-        Text txtStars = objStars.GetComponent<Text>();
-        txtStars.text = "⭐  ⭐  ⭐";
-        txtStars.font = defaultFont;
-        txtStars.fontSize = 44;
-        txtStars.fontStyle = FontStyle.Bold;
-        txtStars.alignment = TextAnchor.MiddleCenter;
-        txtStars.color = new Color(0.96f, 0.62f, 0.04f); // Golden Gold
+        // 3 Stars Sprites (Tabel 3.7 No. 7)
+        Transform tStarsLegacy = objCard.transform.Find("Stars");
+        if (tStarsLegacy != null) tStarsLegacy.gameObject.SetActive(false);
+        mui.scoreStarsText = tStarsLegacy != null ? tStarsLegacy.GetComponent<Text>() : null;
+        mui.finalScoreStarImages = BuildStarRow(objCard.transform, "StarsRow", new Vector2(0f, 305f), 84f, 120f);
 
-        // 5. Title
+        // Title
         Transform tTitle = objCard.transform.Find("Title");
         GameObject objTitle = tTitle != null ? tTitle.gameObject : new GameObject("Title", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
         if (tTitle == null) objTitle.transform.SetParent(objCard.transform, false);
         RectTransform rtTitle = objTitle.GetComponent<RectTransform>();
-        rtTitle.anchorMin = new Vector2(0.5f, 0.5f);
-        rtTitle.anchorMax = new Vector2(0.5f, 0.5f);
-        rtTitle.anchoredPosition = new Vector2(0f, 175f);
-        rtTitle.sizeDelta = new Vector2(900f, 40f);
+        rtTitle.anchorMin = rtTitle.anchorMax = new Vector2(0.5f, 0.5f);
+        rtTitle.anchoredPosition = new Vector2(0f, 205f);
+        rtTitle.sizeDelta = new Vector2(1320f, 60f);
         Text txtTitle = objTitle.GetComponent<Text>();
         txtTitle.text = "SELAMAT! KAMU JADI PAHLAWAN CILIK SIAGA GEMPA!";
         txtTitle.font = defaultFont;
-        txtTitle.fontSize = 25;
+        txtTitle.fontSize = 34;
         txtTitle.fontStyle = FontStyle.Bold;
         txtTitle.alignment = TextAnchor.MiddleCenter;
-        txtTitle.color = new Color(0.06f, 0.09f, 0.16f);
+        txtTitle.color = colDarkInk;
 
-        // 6. Subtitle
         Transform tSub = objCard.transform.Find("Subtitle");
-        GameObject objSub = tSub != null ? tSub.gameObject : new GameObject("Subtitle", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-        if (tSub == null) objSub.transform.SetParent(objCard.transform, false);
-        RectTransform rtSub = objSub.GetComponent<RectTransform>();
-        rtSub.anchorMin = new Vector2(0.5f, 0.5f);
-        rtSub.anchorMax = new Vector2(0.5f, 0.5f);
-        rtSub.anchoredPosition = new Vector2(0f, 142f);
-        rtSub.sizeDelta = new Vector2(900f, 26f);
-        Text txtSub = objSub.GetComponent<Text>();
-        txtSub.text = "TK AISYIYAH 28 SURABAYA • KELULUSAN MANDIRI & TERTIB";
-        txtSub.font = defaultFont;
-        txtSub.fontSize = 15;
-        txtSub.fontStyle = FontStyle.Bold;
-        txtSub.alignment = TextAnchor.MiddleCenter;
-        txtSub.color = new Color(0.71f, 0.33f, 0.04f); // Amber / Ochre
+        if (tSub != null) tSub.gameObject.SetActive(false);
 
-        // 7. 3 Level Pillar Cards (side-by-side)
-        float[] pX = new float[] { -295f, 0f, 295f };
-        string[] pLvl = new string[] { "LEVEL 1", "LEVEL 2", "LEVEL 3" };
-        Color[] pColors = new Color[] {
-            new Color(0.23f, 0.51f, 0.96f), // Blue
-            new Color(0.96f, 0.62f, 0.04f), // Amber
-            new Color(0.13f, 0.77f, 0.36f)  // Emerald
+        // 3 Kotak Hasil Level (Putih + Border Warna-warni + Teks + Ceklis)
+        float[] pX = new float[] { -415f, 0f, 415f };
+        Color[] pBorderColors = new Color[]
+        {
+            new Color(0.13f, 0.77f, 0.36f), // Level 1 Hijau
+            new Color(0.85f, 0.47f, 0.02f), // Level 2 Oranye-coklat
+            new Color(0.01f, 0.52f, 0.78f)  // Level 3 Biru
         };
-        Color[] pBgs = new Color[] {
-            new Color(0.94f, 0.96f, 1.0f),
-            new Color(1.0f, 0.98f, 0.92f),
-            new Color(0.94f, 0.99f, 0.96f)
-        };
-        string[] pTitles = new string[] { "Kuis Bahaya Gempa", "Tanggap Lindung", "Evakuasi Lapangan" };
-        string[] pChecks = new string[] { "✓ Kenali Benda Goyang", "✓ Cepat Masuk Kolong", "✓ Tertib Lindungi Kepala" };
+        string[] pLabels = new string[] { "LEVEL 1: 30/30", "LEVEL 2: 35/35", "LEVEL 3: 35/35" };
         Text[] pScoreTexts = new Text[3];
 
         for (int i = 0; i < 3; i++)
         {
             Transform tPillar = objCard.transform.Find($"Pillar_{i + 1}");
-            GameObject objPillar = tPillar != null ? tPillar.gameObject : new GameObject($"Pillar_{i + 1}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Outline));
+            GameObject objPillar = tPillar != null ? tPillar.gameObject : new GameObject($"Pillar_{i + 1}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             if (tPillar == null) objPillar.transform.SetParent(objCard.transform, false);
 
             RectTransform rtPillar = objPillar.GetComponent<RectTransform>();
-            rtPillar.anchorMin = new Vector2(0.5f, 0.5f);
-            rtPillar.anchorMax = new Vector2(0.5f, 0.5f);
-            rtPillar.anchoredPosition = new Vector2(pX[i], 42f);
-            rtPillar.sizeDelta = new Vector2(275f, 135f);
+            rtPillar.anchorMin = rtPillar.anchorMax = new Vector2(0.5f, 0.5f);
+            rtPillar.anchoredPosition = new Vector2(pX[i], 70f);
+            rtPillar.sizeDelta = new Vector2(390f, 145f);
 
-            Image imgPillar = objPillar.GetComponent<Image>() ?? objPillar.AddComponent<Image>();
-            imgPillar.color = pBgs[i];
-            Outline outPillar = objPillar.GetComponent<Outline>() ?? objPillar.AddComponent<Outline>();
-            outPillar.effectColor = new Color(0.85f, 0.88f, 0.92f);
-            outPillar.effectDistance = new Vector2(2f, -2f);
+            ApplyBorderedCard(objPillar, spRoundedFill, pBorderColors[i], Color.white, 5f);
 
-            // Badge
-            Transform tBdg = objPillar.transform.Find("Badge");
-            GameObject objBdg = tBdg != null ? tBdg.gameObject : new GameObject("Badge", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            if (tBdg == null) objBdg.transform.SetParent(objPillar.transform, false);
-            RectTransform rtBdg = objBdg.GetComponent<RectTransform>();
-            rtBdg.anchorMin = new Vector2(0.5f, 0.5f);
-            rtBdg.anchorMax = new Vector2(0.5f, 0.5f);
-            rtBdg.anchoredPosition = new Vector2(0f, 48f);
-            rtBdg.sizeDelta = new Vector2(115f, 26f);
-            Image imgBdg = objBdg.GetComponent<Image>() ?? objBdg.AddComponent<Image>();
-            imgBdg.color = pColors[i];
+            Transform legacyBdg = objPillar.transform.Find("Badge");
+            if (legacyBdg != null) legacyBdg.gameObject.SetActive(false);
+            Transform legacyTit = objPillar.transform.Find("Title");
+            if (legacyTit != null) legacyTit.gameObject.SetActive(false);
+            Transform legacyChk = objPillar.transform.Find("Check");
+            if (legacyChk != null) legacyChk.gameObject.SetActive(false);
 
-            Transform tBdgTxt = objBdg.transform.Find("Text");
-            GameObject objBdgTxt = tBdgTxt != null ? tBdgTxt.gameObject : new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-            if (tBdgTxt == null) objBdgTxt.transform.SetParent(objBdg.transform, false);
-            RectTransform rtBdgTxt = objBdgTxt.GetComponent<RectTransform>();
-            rtBdgTxt.anchorMin = Vector2.zero;
-            rtBdgTxt.anchorMax = Vector2.one;
-            rtBdgTxt.offsetMin = Vector2.zero;
-            rtBdgTxt.offsetMax = Vector2.zero;
-            Text txtBdg = objBdgTxt.GetComponent<Text>();
-            txtBdg.text = pLvl[i];
-            txtBdg.font = defaultFont;
-            txtBdg.fontSize = 12;
-            txtBdg.fontStyle = FontStyle.Bold;
-            txtBdg.alignment = TextAnchor.MiddleCenter;
-            txtBdg.color = Color.white;
-
-            // Pillar Title
-            Transform tPTit = objPillar.transform.Find("Title");
-            GameObject objPTit = tPTit != null ? tPTit.gameObject : new GameObject("Title", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-            if (tPTit == null) objPTit.transform.SetParent(objPillar.transform, false);
-            RectTransform rtPTit = objPTit.GetComponent<RectTransform>();
-            rtPTit.anchorMin = new Vector2(0.5f, 0.5f);
-            rtPTit.anchorMax = new Vector2(0.5f, 0.5f);
-            rtPTit.anchoredPosition = new Vector2(0f, 18f);
-            rtPTit.sizeDelta = new Vector2(250f, 24f);
-            Text txtPTit = objPTit.GetComponent<Text>();
-            txtPTit.text = pTitles[i];
-            txtPTit.font = defaultFont;
-            txtPTit.fontSize = 15;
-            txtPTit.fontStyle = FontStyle.Bold;
-            txtPTit.alignment = TextAnchor.MiddleCenter;
-            txtPTit.color = new Color(0.12f, 0.16f, 0.25f);
-
-            // Pillar Score Text
             Transform tPScore = objPillar.transform.Find("Score");
             GameObject objPScore = tPScore != null ? tPScore.gameObject : new GameObject("Score", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
             if (tPScore == null) objPScore.transform.SetParent(objPillar.transform, false);
             RectTransform rtPScore = objPScore.GetComponent<RectTransform>();
-            rtPScore.anchorMin = new Vector2(0.5f, 0.5f);
-            rtPScore.anchorMax = new Vector2(0.5f, 0.5f);
-            rtPScore.anchoredPosition = new Vector2(0f, -10f);
-            rtPScore.sizeDelta = new Vector2(250f, 24f);
+            rtPScore.anchorMin = rtPScore.anchorMax = new Vector2(0.5f, 0.5f);
+            rtPScore.anchoredPosition = new Vector2(-18f, 0f);
+            rtPScore.sizeDelta = new Vector2(310f, 60f);
             Text txtPScore = objPScore.GetComponent<Text>();
-            txtPScore.text = i == 0 ? "30 / 30 Poin" : "35 / 35 Poin";
+            txtPScore.text = pLabels[i];
             txtPScore.font = defaultFont;
-            txtPScore.fontSize = 16;
+            txtPScore.fontSize = 27;
             txtPScore.fontStyle = FontStyle.Bold;
             txtPScore.alignment = TextAnchor.MiddleCenter;
-            txtPScore.color = new Color(0.09f, 0.64f, 0.29f); // Green
+            txtPScore.color = pBorderColors[i];
             pScoreTexts[i] = txtPScore;
 
-            // Pillar Check Text
-            Transform tPChk = objPillar.transform.Find("Check");
-            GameObject objPChk = tPChk != null ? tPChk.gameObject : new GameObject("Check", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-            if (tPChk == null) objPChk.transform.SetParent(objPillar.transform, false);
-            RectTransform rtPChk = objPChk.GetComponent<RectTransform>();
-            rtPChk.anchorMin = new Vector2(0.5f, 0.5f);
-            rtPChk.anchorMax = new Vector2(0.5f, 0.5f);
-            rtPChk.anchoredPosition = new Vector2(0f, -38f);
-            rtPChk.sizeDelta = new Vector2(250f, 22f);
-            Text txtPChk = objPChk.GetComponent<Text>();
-            txtPChk.text = pChecks[i];
-            txtPChk.font = defaultFont;
-            txtPChk.fontSize = 13;
-            txtPChk.alignment = TextAnchor.MiddleCenter;
-            txtPChk.color = new Color(0.35f, 0.42f, 0.52f);
+            BuildCheckIcon("CheckIcon", objPillar.transform, new Vector2(142f, 0f), pBorderColors[i]);
         }
 
-        // 8. Total Score Banner
+        // Banner Total Skor Kelulusan
         Transform tBanner = objCard.transform.Find("Banner_TotalScore");
-        GameObject objBanner = tBanner != null ? tBanner.gameObject : new GameObject("Banner_TotalScore", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Outline));
+        GameObject objBanner = tBanner != null ? tBanner.gameObject : new GameObject("Banner_TotalScore", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         if (tBanner == null) objBanner.transform.SetParent(objCard.transform, false);
         RectTransform rtBanner = objBanner.GetComponent<RectTransform>();
-        rtBanner.anchorMin = new Vector2(0.5f, 0.5f);
-        rtBanner.anchorMax = new Vector2(0.5f, 0.5f);
-        rtBanner.anchoredPosition = new Vector2(0f, -54f);
-        rtBanner.sizeDelta = new Vector2(865f, 50f);
-        Image imgBanner = objBanner.GetComponent<Image>() ?? objBanner.AddComponent<Image>();
-        imgBanner.color = new Color(1.0f, 0.95f, 0.78f); // Soft light amber
-        Outline outBanner = objBanner.GetComponent<Outline>() ?? objBanner.AddComponent<Outline>();
-        outBanner.effectColor = new Color(0.96f, 0.62f, 0.04f);
-        outBanner.effectDistance = new Vector2(1.5f, -1.5f);
+        rtBanner.anchorMin = rtBanner.anchorMax = new Vector2(0.5f, 0.5f);
+        rtBanner.anchoredPosition = new Vector2(0f, -68f);
+        rtBanner.sizeDelta = new Vector2(1220f, 88f);
+        ApplyBorderedCard(objBanner, spRoundedFill, colOrange, new Color(1.0f, 0.95f, 0.78f), 4f);
 
         Transform tBannerTxt = objBanner.transform.Find("Text");
         GameObject objBannerTxt = tBannerTxt != null ? tBannerTxt.gameObject : new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
         if (tBannerTxt == null) objBannerTxt.transform.SetParent(objBanner.transform, false);
-        RectTransform rtBannerTxt = objBannerTxt.GetComponent<RectTransform>();
-        rtBannerTxt.anchorMin = Vector2.zero;
-        rtBannerTxt.anchorMax = Vector2.one;
-        rtBannerTxt.offsetMin = Vector2.zero;
-        rtBannerTxt.offsetMax = Vector2.zero;
+        SetFullStretch(objBannerTxt.GetComponent<RectTransform>());
         Text txtBanner = objBannerTxt.GetComponent<Text>();
-        txtBanner.text = "⭐ TOTAL SKOR KELULUSAN: 100 / 100 (SEMPURNA!) ⭐";
+        txtBanner.text = "TOTAL SKOR KELULUSAN: 100 / 100 (SEMPURNA!)";
         txtBanner.font = defaultFont;
-        txtBanner.fontSize = 20;
+        txtBanner.fontSize = 30;
         txtBanner.fontStyle = FontStyle.Bold;
         txtBanner.alignment = TextAnchor.MiddleCenter;
-        txtBanner.color = new Color(0.47f, 0.21f, 0.06f);
+        txtBanner.color = new Color(0.50f, 0.22f, 0.05f);
 
-        // 9. Evaluation Card (Time & Notes)
+        // Card Waktu Selesai
         Transform tEvalCard = objCard.transform.Find("Card_Evaluation");
-        GameObject objEvalCard = tEvalCard != null ? tEvalCard.gameObject : new GameObject("Card_Evaluation", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Outline));
+        GameObject objEvalCard = tEvalCard != null ? tEvalCard.gameObject : new GameObject("Card_Evaluation", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         if (tEvalCard == null) objEvalCard.transform.SetParent(objCard.transform, false);
         RectTransform rtEvalCard = objEvalCard.GetComponent<RectTransform>();
-        rtEvalCard.anchorMin = new Vector2(0.5f, 0.5f);
-        rtEvalCard.anchorMax = new Vector2(0.5f, 0.5f);
-        rtEvalCard.anchoredPosition = new Vector2(0f, -128f);
-        rtEvalCard.sizeDelta = new Vector2(865f, 70f);
-        Image imgEvalCard = objEvalCard.GetComponent<Image>() ?? objEvalCard.AddComponent<Image>();
-        imgEvalCard.color = new Color(0.97f, 0.98f, 0.99f);
-        Outline outEvalCard = objEvalCard.GetComponent<Outline>() ?? objEvalCard.AddComponent<Outline>();
-        outEvalCard.effectColor = new Color(0.88f, 0.91f, 0.94f);
-        outEvalCard.effectDistance = new Vector2(1.5f, -1.5f);
+        rtEvalCard.anchorMin = rtEvalCard.anchorMax = new Vector2(0.5f, 0.5f);
+        rtEvalCard.anchoredPosition = new Vector2(0f, -176f);
+        rtEvalCard.sizeDelta = new Vector2(1220f, 88f);
+        ApplyBorderedCard(objEvalCard, spRoundedFill, colSubtle, new Color(0.97f, 0.98f, 0.99f), 3.5f);
 
         Transform tTime = objEvalCard.transform.Find("TimeText");
         GameObject objTime = tTime != null ? tTime.gameObject : new GameObject("TimeText", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
         if (tTime == null) objTime.transform.SetParent(objEvalCard.transform, false);
-        RectTransform rtTime = objTime.GetComponent<RectTransform>();
-        rtTime.anchorMin = new Vector2(0.5f, 0.5f);
-        rtTime.anchorMax = new Vector2(0.5f, 0.5f);
-        rtTime.anchoredPosition = new Vector2(0f, 15f);
-        rtTime.sizeDelta = new Vector2(830f, 26f);
+        SetFullStretch(objTime.GetComponent<RectTransform>(), 16f);
         Text txtTime = objTime.GetComponent<Text>();
-        txtTime.text = "⏱️ Waktu Selesai: 00:54 Detik • Sangat Tanggap & Mandiri";
+        txtTime.text = "Waktu Selesai: 00:54 Detik • Sangat Tanggap & Mandiri";
         txtTime.font = defaultFont;
-        txtTime.fontSize = 15;
+        txtTime.fontSize = 24;
         txtTime.fontStyle = FontStyle.Bold;
         txtTime.alignment = TextAnchor.MiddleCenter;
-        txtTime.color = new Color(0.2f, 0.26f, 0.33f);
+        txtTime.color = new Color(0.18f, 0.24f, 0.33f);
 
         Transform tEval = objEvalCard.transform.Find("EvalText");
-        GameObject objEval = tEval != null ? tEval.gameObject : new GameObject("EvalText", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-        if (tEval == null) objEval.transform.SetParent(objEvalCard.transform, false);
-        RectTransform rtEval = objEval.GetComponent<RectTransform>();
-        rtEval.anchorMin = new Vector2(0.5f, 0.5f);
-        rtEval.anchorMax = new Vector2(0.5f, 0.5f);
-        rtEval.anchoredPosition = new Vector2(0f, -15f);
-        rtEval.sizeDelta = new Vector2(830f, 26f);
-        Text txtEval = objEval.GetComponent<Text>();
-        txtEval.text = "Catatan Bu Guru: \"Ananda sangat pintar dan mandiri dalam mempraktikkan mitigasi bencana gempa bumi!\"";
-        txtEval.font = defaultFont;
-        txtEval.fontSize = 15;
-        txtEval.fontStyle = FontStyle.Italic;
-        txtEval.alignment = TextAnchor.MiddleCenter;
-        txtEval.color = new Color(0.28f, 0.33f, 0.41f);
+        if (tEval != null) tEval.gameObject.SetActive(false);
 
-        // 10. Action Buttons (Main Lagi & Menu Utama)
+        // Action Buttons (Main Lagi & Menu Utama)
         Transform tRetry = objCard.transform.Find("Btn_Retry");
-        GameObject objRetry = tRetry != null ? tRetry.gameObject : new GameObject("Btn_Retry", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(Outline));
+        GameObject objRetry = tRetry != null ? tRetry.gameObject : new GameObject("Btn_Retry", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         if (tRetry == null) objRetry.transform.SetParent(objCard.transform, false);
-        RectTransform rtRetry = objRetry.GetComponent<RectTransform>();
-        rtRetry.anchorMin = new Vector2(0.5f, 0.5f);
-        rtRetry.anchorMax = new Vector2(0.5f, 0.5f);
-        rtRetry.anchoredPosition = new Vector2(-140f, -200f);
-        rtRetry.sizeDelta = new Vector2(240f, 54f);
-        Image imgRetry = objRetry.GetComponent<Image>() ?? objRetry.AddComponent<Image>();
-        if (sprBtnWhite != null)
-        {
-            imgRetry.sprite = sprBtnWhite;
-            imgRetry.type = Image.Type.Sliced;
-            imgRetry.color = Color.white;
-            var ol = objRetry.GetComponent<Outline>();
-            if (ol != null) Object.DestroyImmediate(ol);
-        }
-        else
-        {
-            imgRetry.color = new Color(0.31f, 0.27f, 0.90f); // Indigo #4F46E5
-            Outline outRetry = objRetry.GetComponent<Outline>() ?? objRetry.AddComponent<Outline>();
-            outRetry.effectColor = new Color(0.22f, 0.19f, 0.68f);
-            outRetry.effectDistance = new Vector2(2f, -2f);
-        }
+        StyleActionButton(objRetry.transform, "Main Lagi", sprBtnWhite, spRoundedFill, Color.white, colDarkInk, 30, defaultFont, new Vector2(-260f, -310f), new Vector2(420f, 92f));
         Button btnRetry = objRetry.GetComponent<Button>() ?? objRetry.AddComponent<Button>();
 
-        Transform tRetryTxt = objRetry.transform.Find("Text");
-        GameObject objRetryTxt = tRetryTxt != null ? tRetryTxt.gameObject : new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-        if (tRetryTxt == null) objRetryTxt.transform.SetParent(objRetry.transform, false);
-        RectTransform rtRetryTxt = objRetryTxt.GetComponent<RectTransform>();
-        rtRetryTxt.anchorMin = Vector2.zero;
-        rtRetryTxt.anchorMax = Vector2.one;
-        rtRetryTxt.offsetMin = Vector2.zero;
-        rtRetryTxt.offsetMax = Vector2.zero;
-        Text txtRetry = objRetryTxt.GetComponent<Text>();
-        txtRetry.text = "🔄 MAIN LAGI";
-        txtRetry.font = defaultFont;
-        txtRetry.fontSize = 17;
-        txtRetry.fontStyle = FontStyle.Bold;
-        txtRetry.alignment = TextAnchor.MiddleCenter;
-        txtRetry.color = new Color(0.12f, 0.16f, 0.22f);
-
         Transform tMenu = objCard.transform.Find("Btn_MainMenu");
-        GameObject objMenu = tMenu != null ? tMenu.gameObject : new GameObject("Btn_MainMenu", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(Outline));
+        GameObject objMenu = tMenu != null ? tMenu.gameObject : new GameObject("Btn_MainMenu", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         if (tMenu == null) objMenu.transform.SetParent(objCard.transform, false);
-        RectTransform rtMenu = objMenu.GetComponent<RectTransform>();
-        rtMenu.anchorMin = new Vector2(0.5f, 0.5f);
-        rtMenu.anchorMax = new Vector2(0.5f, 0.5f);
-        rtMenu.anchoredPosition = new Vector2(140f, -200f);
-        rtMenu.sizeDelta = new Vector2(250f, 54f);
-        Image imgMenu = objMenu.GetComponent<Image>() ?? objMenu.AddComponent<Image>();
-        if (sprBtnGreen != null)
-        {
-            imgMenu.sprite = sprBtnGreen;
-            imgMenu.type = Image.Type.Sliced;
-            imgMenu.color = Color.white;
-            var ol = objMenu.GetComponent<Outline>();
-            if (ol != null) Object.DestroyImmediate(ol);
-        }
-        else
-        {
-            imgMenu.color = new Color(0.13f, 0.77f, 0.36f); // Green #22C55E
-            Outline outMenu = objMenu.GetComponent<Outline>() ?? objMenu.AddComponent<Outline>();
-            outMenu.effectColor = new Color(0.08f, 0.64f, 0.29f);
-            outMenu.effectDistance = new Vector2(2f, -2f);
-        }
+        StyleActionButton(objMenu.transform, "Menu Utama", sprBtnGreen, spRoundedFill, colGreen, Color.white, 30, defaultFont, new Vector2(260f, -310f), new Vector2(420f, 92f));
         Button btnMenu = objMenu.GetComponent<Button>() ?? objMenu.AddComponent<Button>();
 
-        Transform tMenuTxt = objMenu.transform.Find("Text");
-        GameObject objMenuTxt = tMenuTxt != null ? tMenuTxt.gameObject : new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-        if (tMenuTxt == null) objMenuTxt.transform.SetParent(objMenu.transform, false);
-        RectTransform rtMenuTxt = objMenuTxt.GetComponent<RectTransform>();
-        rtMenuTxt.anchorMin = Vector2.zero;
-        rtMenuTxt.anchorMax = Vector2.one;
-        rtMenuTxt.offsetMin = Vector2.zero;
-        rtMenuTxt.offsetMax = Vector2.zero;
-        Text txtMenu = objMenuTxt.GetComponent<Text>();
-        txtMenu.text = "🏠 MENU UTAMA";
-        txtMenu.font = defaultFont;
-        txtMenu.fontSize = 18;
-        txtMenu.fontStyle = FontStyle.Bold;
-        txtMenu.alignment = TextAnchor.MiddleCenter;
-        txtMenu.color = Color.white;
-
-        // Wire to MissionUI
         mui.finalScorePanel = panel;
         mui.scoreTimeText = txtTime;
-        mui.scoreStarsText = txtStars;
         mui.scorePointsText = txtBanner;
-        mui.scoreEvaluationText = txtEval;
+        mui.scoreEvaluationText = null;
         mui.scorePillar1Text = pScoreTexts[0];
         mui.scorePillar2Text = pScoreTexts[1];
         mui.scorePillar3Text = pScoreTexts[2];
@@ -2728,6 +2489,252 @@ public static class Level23SetupEditor
         EditorUtility.SetDirty(panel);
         EditorUtility.SetDirty(mui);
     }
+
+    #region Word UI Visual Helpers
+
+    private static Font GetProjectFont()
+    {
+        return AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Fredoka-Variable.ttf")
+            ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf")
+            ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
+    }
+
+    private static void SetFullStretch(RectTransform rt, float inset = 0f)
+    {
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = new Vector2(inset, inset);
+        rt.offsetMax = new Vector2(-inset, -inset);
+    }
+
+    private static void ApplyBorderedCard(GameObject outer, Sprite spFill, Color borderColor, Color fillColor, float thickness)
+    {
+        var ol = outer.GetComponent<Outline>();
+        if (ol != null) Object.DestroyImmediate(ol);
+
+        Image outerImg = outer.GetComponent<Image>() ?? outer.AddComponent<Image>();
+        if (spFill != null) { outerImg.sprite = spFill; outerImg.type = Image.Type.Sliced; }
+        outerImg.color = borderColor;
+
+        Transform tFill = outer.transform.Find("Card_Fill");
+        GameObject fillObj = tFill != null ? tFill.gameObject : new GameObject("Card_Fill", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        if (tFill == null) fillObj.transform.SetParent(outer.transform, false);
+        fillObj.transform.SetSiblingIndex(0);
+        SetFullStretch(fillObj.GetComponent<RectTransform>(), thickness);
+        Image fillImg = fillObj.GetComponent<Image>();
+        if (spFill != null) { fillImg.sprite = spFill; fillImg.type = Image.Type.Sliced; }
+        fillImg.color = fillColor;
+        fillImg.raycastTarget = false;
+    }
+
+    private static void StylePauseLabel(Transform tLbl, string labelText, Font font, Color col, Vector2 pos, Vector2 size)
+    {
+        if (tLbl == null) return;
+        RectTransform rt = tLbl as RectTransform;
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = size;
+        Text txt = tLbl.GetComponent<Text>();
+        if (txt != null)
+        {
+            txt.text = labelText;
+            txt.font = font;
+            txt.fontSize = 30;
+            txt.fontStyle = FontStyle.Bold;
+            txt.alignment = TextAnchor.MiddleLeft;
+            txt.color = col;
+        }
+    }
+
+    private static void StyleCapsuleSlider(Slider sld, Sprite spFill, Color fillColor, Vector2 pos, Vector2 size)
+    {
+        RectTransform rt = sld.GetComponent<RectTransform>();
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = size;
+        sld.transition = Selectable.Transition.None;
+
+        Transform tBg = sld.transform.Find("Background");
+        if (tBg != null)
+        {
+            SetFullStretch(tBg.GetComponent<RectTransform>());
+            var bgOl = tBg.GetComponent<Outline>();
+            if (bgOl != null) Object.DestroyImmediate(bgOl);
+            Image bgImg = tBg.GetComponent<Image>();
+            if (bgImg != null)
+            {
+                if (spFill != null) { bgImg.sprite = spFill; bgImg.type = Image.Type.Sliced; }
+                bgImg.color = new Color(0.88f, 0.91f, 0.95f);
+            }
+        }
+
+        Transform tFillArea = sld.transform.Find("Fill Area");
+        if (tFillArea != null)
+        {
+            SetFullStretch(tFillArea.GetComponent<RectTransform>());
+            Transform tFill = tFillArea.Find("Fill");
+            if (tFill != null)
+            {
+                SetFullStretch(tFill.GetComponent<RectTransform>());
+                Image fImg = tFill.GetComponent<Image>();
+                if (fImg != null)
+                {
+                    if (spFill != null) { fImg.sprite = spFill; fImg.type = Image.Type.Sliced; }
+                    fImg.color = fillColor;
+                }
+            }
+        }
+
+        Transform tHandleArea = sld.transform.Find("Handle Slide Area");
+        if (tHandleArea != null)
+        {
+            Transform tHandle = tHandleArea.Find("Handle");
+            if (tHandle != null)
+            {
+                Image hImg = tHandle.GetComponent<Image>();
+                if (hImg != null) hImg.color = Color.clear;
+            }
+        }
+    }
+
+    private static void StyleActionButton(Transform tBtn, string label, Sprite preferred, Sprite fallback, Color tint, Color textColor, int fontSize, Font font, Vector2 pos, Vector2 size)
+    {
+        if (tBtn == null) return;
+        RectTransform rt = tBtn as RectTransform;
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = size;
+
+        var oldOl = tBtn.GetComponent<Outline>();
+        if (oldOl != null) Object.DestroyImmediate(oldOl);
+
+        Image img = tBtn.GetComponent<Image>() ?? tBtn.gameObject.AddComponent<Image>();
+        Sprite s = preferred ?? fallback;
+        if (s != null) { img.sprite = s; img.type = Image.Type.Sliced; }
+        img.color = (preferred != null && preferred != fallback) ? Color.white : tint;
+
+        Transform tTxt = tBtn.Find("Text");
+        GameObject objTxt = tTxt != null ? tTxt.gameObject : new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+        if (tTxt == null) objTxt.transform.SetParent(tBtn, false);
+        SetFullStretch(objTxt.GetComponent<RectTransform>());
+        Text txt = objTxt.GetComponent<Text>();
+        txt.text = label;
+        txt.font = font;
+        txt.fontSize = fontSize;
+        txt.fontStyle = FontStyle.Bold;
+        txt.alignment = TextAnchor.MiddleCenter;
+        txt.color = textColor;
+    }
+
+    private static GameObject BuildCheckIcon(string name, Transform parent, Vector2 pos, Color col)
+    {
+        Transform existing = parent.Find(name);
+        if (existing != null) Object.DestroyImmediate(existing.gameObject);
+
+        GameObject root = new GameObject(name, typeof(RectTransform));
+        root.transform.SetParent(parent, false);
+        RectTransform r = root.GetComponent<RectTransform>();
+        r.anchoredPosition = pos;
+        r.sizeDelta = new Vector2(30f, 30f);
+
+        GameObject s1 = new GameObject("ArmShort", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        s1.transform.SetParent(root.transform, false);
+        RectTransform r1 = s1.GetComponent<RectTransform>();
+        r1.anchoredPosition = new Vector2(-5f, -3f);
+        r1.sizeDelta = new Vector2(14f, 5f);
+        r1.localEulerAngles = new Vector3(0f, 0f, -45f);
+        Image i1 = s1.GetComponent<Image>(); i1.color = col; i1.raycastTarget = false;
+
+        GameObject s2 = new GameObject("ArmLong", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        s2.transform.SetParent(root.transform, false);
+        RectTransform r2 = s2.GetComponent<RectTransform>();
+        r2.anchoredPosition = new Vector2(5f, 1f);
+        r2.sizeDelta = new Vector2(24f, 5f);
+        r2.localEulerAngles = new Vector3(0f, 0f, 45f);
+        Image i2 = s2.GetComponent<Image>(); i2.color = col; i2.raycastTarget = false;
+        return root;
+    }
+
+    private static void CreatePauseBar(Transform parent, string name, Sprite spFill, Vector2 pos)
+    {
+        Transform existing = parent.Find(name);
+        GameObject bar = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        if (existing == null) bar.transform.SetParent(parent, false);
+        RectTransform rt = bar.GetComponent<RectTransform>();
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = new Vector2(11f, 38f);
+        Image img = bar.GetComponent<Image>();
+        if (spFill != null) { img.sprite = spFill; img.type = Image.Type.Sliced; }
+        img.color = Color.white;
+        img.raycastTarget = false;
+    }
+
+    private static void BuildSpeakerShape(Transform parent, Color col)
+    {
+        for (int i = parent.childCount - 1; i >= 0; i--) Object.DestroyImmediate(parent.GetChild(i).gameObject);
+
+        GameObject body = new GameObject("SpkBody", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        body.transform.SetParent(parent, false);
+        RectTransform rb = body.GetComponent<RectTransform>();
+        rb.anchoredPosition = new Vector2(-10f, 0f);
+        rb.sizeDelta = new Vector2(10f, 14f);
+        body.GetComponent<Image>().color = col;
+
+        GameObject cone = new GameObject("SpkCone", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        cone.transform.SetParent(parent, false);
+        RectTransform rc = cone.GetComponent<RectTransform>();
+        rc.anchoredPosition = new Vector2(-2f, 0f);
+        rc.sizeDelta = new Vector2(12f, 24f);
+        cone.GetComponent<Image>().color = col;
+
+        GameObject wave1 = new GameObject("Wave1", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        wave1.transform.SetParent(parent, false);
+        RectTransform rw1 = wave1.GetComponent<RectTransform>();
+        rw1.anchoredPosition = new Vector2(10f, 0f);
+        rw1.sizeDelta = new Vector2(4f, 14f);
+        wave1.GetComponent<Image>().color = new Color(0.45f, 0.72f, 0.96f);
+
+        GameObject wave2 = new GameObject("Wave2", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        wave2.transform.SetParent(parent, false);
+        RectTransform rw2 = wave2.GetComponent<RectTransform>();
+        rw2.anchoredPosition = new Vector2(17f, 0f);
+        rw2.sizeDelta = new Vector2(4f, 24f);
+        wave2.GetComponent<Image>().color = new Color(0.45f, 0.72f, 0.96f);
+    }
+
+    private static Image[] BuildStarRow(Transform parent, string name, Vector2 pos, float starSize, float spacing)
+    {
+        Transform existing = parent.Find(name);
+        GameObject row = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform));
+        if (existing == null) row.transform.SetParent(parent, false);
+        RectTransform rRow = row.GetComponent<RectTransform>();
+        rRow.anchorMin = rRow.anchorMax = new Vector2(0.5f, 0.5f);
+        rRow.anchoredPosition = pos;
+        rRow.sizeDelta = new Vector2(spacing * 3f + starSize, starSize + 10f);
+
+        Sprite spStar = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/tex_star_glowing.png");
+        Image[] imgs = new Image[3];
+        for (int i = 0; i < 3; i++)
+        {
+            Transform ts = row.transform.Find($"Star_{i}");
+            GameObject go = ts != null ? ts.gameObject : new GameObject($"Star_{i}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            if (ts == null) go.transform.SetParent(row.transform, false);
+            RectTransform rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = new Vector2((i - 1) * spacing, 0f);
+            rt.sizeDelta = new Vector2(starSize, starSize);
+            Image img = go.GetComponent<Image>();
+            if (spStar != null) img.sprite = spStar;
+            img.color = Color.white;
+            img.preserveAspect = true;
+            img.raycastTarget = false;
+            imgs[i] = img;
+        }
+        return imgs;
+    }
+
+    #endregion
 }
 #endif
 

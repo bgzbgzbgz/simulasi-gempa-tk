@@ -37,6 +37,8 @@ public class SoundManager : MonoBehaviour
     [SerializeField] private AudioSource loopQuakeSource;
     [SerializeField] private AudioSource loopSirenSource;
 
+    private bool isDuckedState = false;
+
     private void Awake()
     {
         if (_instance != null && _instance != this)
@@ -49,6 +51,26 @@ public class SoundManager : MonoBehaviour
 
         EnsureAudioSources();
         AutoLoadClipsIfMissing();
+        RefreshVolumes();
+    }
+
+    private float GetSfxScale()
+    {
+        return Mathf.Clamp01(PlayerPrefs.GetFloat("SFX_Volume", 0.85f));
+    }
+
+    public void RefreshVolumes()
+    {
+        EnsureAudioSources();
+        float sfxScale = GetSfxScale();
+        if (loopQuakeSource != null)
+        {
+            loopQuakeSource.volume = (isDuckedState ? 0.22f : 0.65f) * sfxScale;
+        }
+        if (loopSirenSource != null)
+        {
+            loopSirenSource.volume = (isDuckedState ? 0.12f : 0.45f) * sfxScale;
+        }
     }
 
     private void EnsureAudioSources()
@@ -63,14 +85,14 @@ public class SoundManager : MonoBehaviour
             loopQuakeSource = gameObject.AddComponent<AudioSource>();
             loopQuakeSource.playOnAwake = false;
             loopQuakeSource.loop = true;
-            loopQuakeSource.volume = 0.65f;
+            loopQuakeSource.volume = 0.65f * GetSfxScale();
         }
         if (loopSirenSource == null)
         {
             loopSirenSource = gameObject.AddComponent<AudioSource>();
             loopSirenSource.playOnAwake = false;
             loopSirenSource.loop = true;
-            loopSirenSource.volume = 0.45f;
+            loopSirenSource.volume = 0.45f * GetSfxScale();
         }
     }
 
@@ -109,6 +131,7 @@ public class SoundManager : MonoBehaviour
     public void StartEarthquake()
     {
         EnsureAudioSources();
+        RefreshVolumes();
         if (sfxEarthquakeRumble != null)
         {
             loopQuakeSource.clip = sfxEarthquakeRumble;
@@ -123,14 +146,24 @@ public class SoundManager : MonoBehaviour
 
     public void StopEarthquake()
     {
+        isDuckedState = false;
         if (loopQuakeSource != null && loopQuakeSource.isPlaying) loopQuakeSource.Stop();
         if (loopSirenSource != null && loopSirenSource.isPlaying) loopSirenSource.Stop();
+    }
+
+    /// <summary>
+    /// Menyesuaikan volume gempa & sirine secara dinamis saat Voice Over Bu Guru sedang berbicara (Audio Ducking).
+    /// </summary>
+    public void SetDucking(bool isDucked)
+    {
+        isDuckedState = isDucked;
+        RefreshVolumes();
     }
 
     private void PlayOneShot(AudioClip clip, float volume = 1f)
     {
         if (clip == null) return;
         EnsureAudioSources();
-        sfxSource.PlayOneShot(clip, volume);
+        sfxSource.PlayOneShot(clip, volume * GetSfxScale());
     }
 }

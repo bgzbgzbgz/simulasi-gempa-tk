@@ -33,6 +33,7 @@ public class CheckpointTrigger : MonoBehaviour
     private bool isPlayerInside = false;
     private BoyController currentPlayer = null;
     private bool isCompleted = false;
+    private bool hasPlayedShelterVO = false;
 
     private void Awake()
     {
@@ -107,6 +108,16 @@ public class CheckpointTrigger : MonoBehaviour
                 GameManager.Instance.missionUI.ResetHoldProgress();
             }
             return;
+        }
+
+        // Putar VO Bu Guru memuji saat murid menunduk di kolong meja (Level 2)
+        if (targetLevel == 2 && requireCrouch && !hasPlayedShelterVO)
+        {
+            hasPlayedShelterVO = true;
+            if (VoiceOverManager.Instance != null)
+            {
+                VoiceOverManager.Instance.PlayVO_08_Level2MasukKolong();
+            }
         }
 
         // Logika durasi bertahan (Hold Timer)

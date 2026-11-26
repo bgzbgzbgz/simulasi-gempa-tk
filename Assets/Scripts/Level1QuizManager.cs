@@ -67,7 +67,9 @@ public class Level1QuizManager : MonoBehaviour
     public Button confirmAnswerButton;
     public RectTransform buGuruCard;
     public Outline[] optionCardOutlines = new Outline[3];
+    public Image[] optionCardBorderImages = new Image[3];
     public int selectedOptionIndex = -1;
+    private Coroutine startSequenceRoutine;
 
     private void Awake()
     {
@@ -81,17 +83,17 @@ public class Level1QuizManager : MonoBehaviour
         // Auto-assign references jika belum terhubung
         if (promptText == null)
         {
-            promptText = transform.Find("Card_Quiz/Text_Prompt")?.GetComponent<Text>();
+            promptText = (transform.Find("Card_Quiz/Question_Prompt") ?? transform.Find("Card_Quiz/Text_Prompt"))?.GetComponent<Text>();
         }
         if (feedbackText == null)
         {
-            feedbackText = transform.Find("Card_Quiz/Text_Feedback")?.GetComponent<Text>();
+            feedbackText = (transform.Find("Card_Quiz/FeedbackText") ?? transform.Find("Card_Quiz/Text_Feedback"))?.GetComponent<Text>();
         }
         if (confirmAnswerButton == null)
         {
             confirmAnswerButton = transform.Find("Card_Quiz/Btn_ConfirmAnswer")?.GetComponent<Button>();
         }
-        if (confirmAnswerButton != null)
+        if (confirmAnswerButton != null && confirmAnswerButton.onClick.GetPersistentEventCount() == 0)
         {
             confirmAnswerButton.onClick.RemoveAllListeners();
             confirmAnswerButton.onClick.AddListener(OnConfirmAnswerClicked);
@@ -104,6 +106,21 @@ public class Level1QuizManager : MonoBehaviour
             {
                 Transform t = transform.Find($"Card_Quiz/Btn_Option_{i}");
                 if (t != null) optionButtons[i] = t.GetComponent<Button>();
+            }
+        }
+
+        if (optionCardBorderImages == null || optionCardBorderImages.Length != 3)
+        {
+            optionCardBorderImages = new Image[3];
+        }
+        for (int i = 0; i < 3; i++)
+        {
+            if (optionButtons != null && i < optionButtons.Length && optionButtons[i] != null)
+            {
+                if (optionButtons[i].transform.Find("Card_Fill") != null)
+                {
+                    optionCardBorderImages[i] = optionButtons[i].GetComponent<Image>();
+                }
             }
         }
 
@@ -132,7 +149,8 @@ public class Level1QuizManager : MonoBehaviour
             {
                 if (optionButtons != null && i < optionButtons.Length && optionButtons[i] != null)
                 {
-                    optionTexts[i] = optionButtons[i].GetComponentInChildren<Text>(true);
+                    Transform tLbl = optionButtons[i].transform.Find("Text_Label");
+                    optionTexts[i] = tLbl != null ? tLbl.GetComponent<Text>() : optionButtons[i].GetComponentInChildren<Text>(true);
                 }
             }
         }
@@ -172,7 +190,7 @@ public class Level1QuizManager : MonoBehaviour
         for (int i = 0; i < optionButtons.Length; i++)
         {
             int index = i;
-            if (optionButtons[i] != null)
+            if (optionButtons[i] != null && optionButtons[i].onClick.GetPersistentEventCount() == 0)
             {
                 optionButtons[i].onClick.RemoveAllListeners();
                 optionButtons[i].onClick.AddListener(() => OnOptionClicked(index));
@@ -324,7 +342,25 @@ public class Level1QuizManager : MonoBehaviour
         }
 
         currentQuestionIndex = 0;
-        isAnsweringLocked = false;
+        isAnsweringLocked = true;
+        PopulateQuestionVisuals();
+
+        if (startSequenceRoutine != null) StopCoroutine(startSequenceRoutine);
+        startSequenceRoutine = StartCoroutine(StartQuizSequence());
+    }
+
+    private IEnumerator StartQuizSequence()
+    {
+        if (feedbackText != null)
+        {
+            feedbackText.color = new Color(0.01f, 0.52f, 0.78f);
+            feedbackText.text = "Dengarkan penjelasan Bu Guru ya...";
+        }
+        if (VoiceOverManager.Instance != null && VoiceOverManager.Instance.vo02_Level1Intro != null && PlayerPrefs.GetInt("VoiceOver_Enabled", 1) == 1)
+        {
+            VoiceOverManager.Instance.PlayVO_02_Level1Intro();
+            yield return new WaitForSeconds(VoiceOverManager.Instance.vo02_Level1Intro.length + 0.35f);
+        }
         DisplayCurrentQuestion();
     }
 
@@ -337,13 +373,39 @@ public class Level1QuizManager : MonoBehaviour
         }
 
         QuizQuestion q = questions[currentQuestionIndex];
+        PopulateQuestionVisuals();
+
+        if (VoiceOverManager.Instance != null)
+        {
+            if (currentQuestionIndex == 0) VoiceOverManager.Instance.PlayVO_03_Soal1();
+            else if (currentQuestionIndex == 1) VoiceOverManager.Instance.PlayVO_04_Soal2();
+        }
+        else if (voiceAudioSource != null && q.questionAudio != null)
+        {
+            voiceAudioSource.Stop();
+            voiceAudioSource.clip = q.questionAudio;
+            voiceAudioSource.Play();
+        }
+
+        StartCoroutine(SlideInBuGuru());
+        isAnsweringLocked = false;
+    }
+
+    private void PopulateQuestionVisuals()
+    {
+        if (questions == null || questions.Length == 0 || currentQuestionIndex >= questions.Length) return;
+
+        QuizQuestion q = questions[currentQuestionIndex];
         if (promptText != null)
         {
-            promptText.text = $"Soal {currentQuestionIndex + 1}/{questions.Length}:\n{q.questionPrompt}";
+            promptText.text = q.questionPrompt;
         }
         if (feedbackText != null)
         {
-            feedbackText.text = "";
+            feedbackText.color = new Color(0.01f, 0.52f, 0.78f);
+            feedbackText.text = currentQuestionIndex == 0
+                ? "Pilih salah satu gambar lalu tekan tombol Pilih!"
+                : "Sentuh salah satu kartu suara lalu tekan tombol Pilih!";
         }
 
         // Sinkronisasi slot publik Soal 2 audio jika diubah oleh user di Inspector
@@ -358,23 +420,15 @@ public class Level1QuizManager : MonoBehaviour
             if (sfxSoal2_OpsiC_Banjir != null) questions[1].optionAudios[2] = sfxSoal2_OpsiC_Banjir;
         }
 
-        if (voiceAudioSource != null && q.questionAudio != null)
-        {
-            voiceAudioSource.Stop();
-            voiceAudioSource.clip = q.questionAudio;
-            voiceAudioSource.Play();
-        }
-
         selectedOptionIndex = -1;
         UpdateSelectionOutlines();
-        StartCoroutine(SlideInBuGuru());
 
         for (int i = 0; i < 3; i++)
         {
             if (i < optionTexts.Length && optionTexts[i] != null && q.optionLabels != null && i < q.optionLabels.Length)
             {
                 optionTexts[i].text = q.optionLabels[i];
-                optionTexts[i].alignment = TextAnchor.LowerCenter;
+                optionTexts[i].alignment = TextAnchor.MiddleCenter;
             }
 
             // Pastikan Image_Display & AnimatedImageUI terhubung kuat
@@ -441,8 +495,6 @@ public class Level1QuizManager : MonoBehaviour
                 optionButtons[i].interactable = true;
             }
         }
-
-        isAnsweringLocked = false;
     }
 
     public void OnOptionClicked(int optionIndex)
@@ -475,9 +527,9 @@ public class Level1QuizManager : MonoBehaviour
     {
         Color selectedBlue = new Color(0.01f, 0.52f, 0.78f); // #0284C7
         Color normalBorder = new Color(0.8f, 0.84f, 0.88f); // #CBD5E1
+        Color normalText = new Color(0.15f, 0.20f, 0.28f);
 
-        // Figcraft Fill Highlight ketika tombol diklik
-        Color selectedFill = new Color(0.82f, 0.94f, 1.0f); // Joyful sky tint
+        Color selectedFill = new Color(0.90f, 0.97f, 1.0f);
         Color normalFill = Color.white;
 
         if (optionButtons != null)
@@ -487,10 +539,21 @@ public class Level1QuizManager : MonoBehaviour
                 if (optionButtons[i] != null)
                 {
                     bool isSel = (i == selectedOptionIndex);
-                    Image btnImg = optionButtons[i].GetComponent<Image>();
-                    if (btnImg != null)
+                    bool hasRoundedBorder = (optionCardBorderImages != null && i < optionCardBorderImages.Length && optionCardBorderImages[i] != null);
+
+                    if (hasRoundedBorder)
                     {
-                        btnImg.color = isSel ? selectedFill : normalFill;
+                        optionCardBorderImages[i].color = isSel ? selectedBlue : normalBorder;
+                    }
+                    else
+                    {
+                        Image btnImg = optionButtons[i].GetComponent<Image>();
+                        if (btnImg != null) btnImg.color = isSel ? selectedFill : normalFill;
+                    }
+
+                    if (optionTexts != null && i < optionTexts.Length && optionTexts[i] != null)
+                    {
+                        optionTexts[i].color = isSel ? selectedBlue : normalText;
                     }
                 }
             }
@@ -519,7 +582,7 @@ public class Level1QuizManager : MonoBehaviour
             if (feedbackText != null)
             {
                 feedbackText.color = new Color(0.95f, 0.55f, 0.1f);
-                feedbackText.text = "Sentuh salah satu gambar rumah dulu ya!";
+                feedbackText.text = "Sentuh salah satu kartu dulu lalu tekan tombol Pilih!";
             }
             return;
         }
@@ -564,13 +627,18 @@ public class Level1QuizManager : MonoBehaviour
 
         if (feedbackText != null)
         {
-            feedbackText.color = new Color(0.2f, 0.9f, 0.3f);
+            feedbackText.color = new Color(0.10f, 0.65f, 0.25f);
             feedbackText.text = q.correctFeedback;
         }
 
         if (currentQuestionIndex == 1)
         {
             yield return new WaitForSeconds(0.6f);
+        }
+
+        if (VoiceOverManager.Instance != null)
+        {
+            VoiceOverManager.Instance.PlayVO_05_FeedbackBenar();
         }
 
         if (sfxAudioSource != null && correctSfx != null)
@@ -591,9 +659,11 @@ public class Level1QuizManager : MonoBehaviour
 
     private IEnumerator HandleWrongAnswer(QuizQuestion q)
     {
+        isAnsweringLocked = true;
+
         if (feedbackText != null)
         {
-            feedbackText.color = new Color(1f, 0.35f, 0.35f);
+            feedbackText.color = new Color(0.90f, 0.20f, 0.20f);
             feedbackText.text = q.wrongFeedback;
         }
 
@@ -602,12 +672,18 @@ public class Level1QuizManager : MonoBehaviour
             yield return new WaitForSeconds(0.8f);
         }
 
+        if (VoiceOverManager.Instance != null)
+        {
+            VoiceOverManager.Instance.PlayVO_06_FeedbackSalah();
+        }
+
         if (sfxAudioSource != null && wrongSfx != null)
         {
             sfxAudioSource.PlayOneShot(wrongSfx);
         }
 
         yield return new WaitForSeconds(1.2f);
+        isAnsweringLocked = false;
     }
 
     private void CompleteQuiz()

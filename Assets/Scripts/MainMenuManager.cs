@@ -26,6 +26,8 @@ public class MainMenuManager : MonoBehaviour
     [Header("Karakter Selection UI")]
     public Outline cardBoyOutline;
     public Outline cardGirlOutline;
+    public Image cardBoyBorderImage;
+    public Image cardGirlBorderImage;
     public Image cardBoyBg;
     public Image cardGirlBg;
     public Image btnSelectBoyImage;
@@ -34,12 +36,20 @@ public class MainMenuManager : MonoBehaviour
     public Text btnSelectGirlText;
     public GameObject badgeBoySelected;
     public GameObject badgeGirlSelected;
+    public GameObject badgeGirlLocked;
     public Text textCharacterNotice;
+
+    [Header("Demo Lock")]
+    // shortcut: Girl card locked in UI for demo until 3D girl asset is repaired
+    public bool lockGirlCharacter = true;
 
     [Header("Pengaturan Audio UI")]
     public Slider sliderBGM;
     public Slider sliderSFX;
     public Toggle toggleVoiceOver;
+    public Image toggleVoiceOverBg;
+    public Text toggleVoiceOverText;
+    public GameObject toggleVoiceOverCheckIcon;
     public Text textBGMValue;
     public Text textSFXValue;
 
@@ -56,6 +66,13 @@ public class MainMenuManager : MonoBehaviour
             GameObject smObj = new GameObject("SoundManager", typeof(SoundManager));
         }
 
+        if (lockGirlCharacter)
+        {
+            selectedGender = "Boy";
+            PlayerPrefs.SetString("PlayerGender", "Boy");
+            PlayerPrefs.Save();
+        }
+
         // Auto-wire semua tombol di scene agar selalu aktif & berfungsi saat Play mode
         AutoWireAllButtons();
 
@@ -66,6 +83,15 @@ public class MainMenuManager : MonoBehaviour
     private void Start()
     {
         ShowOnlyPanel(panelMainMenu);
+
+        if (lockGirlCharacter)
+        {
+            selectedGender = "Boy";
+        }
+        else
+        {
+            selectedGender = PlayerPrefs.GetString("PlayerGender", "Boy");
+        }
 
         // Inisialisasi tampilan pilihan karakter default (Boy)
         UpdateCharacterSelectionVisuals();
@@ -79,16 +105,41 @@ public class MainMenuManager : MonoBehaviour
                 inputPlayerName.text = savedName;
             }
         }
+
+        // Putar suara salam pembuka Bu Guru di Menu Utama (jeda sedikit agar AudioListener siap)
+        StartCoroutine(PlayIntroDelayed());
+    }
+
+    private System.Collections.IEnumerator PlayIntroDelayed()
+    {
+        yield return new WaitForSeconds(0.4f);
+        if (VoiceOverManager.Instance != null)
+        {
+            VoiceOverManager.Instance.PlayVO_01_Intro();
+        }
     }
 
     /// <summary>
-    /// Menjamin semua tombol terhubung dengan listener fungsinya masing-masing.
+    /// Menjamin semua tombol terhubung dengan listener fungsinya masing-masing tanpa dobel trigger.
     /// </summary>
     public void AutoWireAllButtons()
     {
         Button[] buttons = GetComponentsInChildren<Button>(true);
         foreach (Button b in buttons)
         {
+            if (b.gameObject.name == "Btn_SelectGirl")
+            {
+                btnSelectGirlImage = b.GetComponent<Image>();
+                btnSelectGirlText = b.GetComponentInChildren<Text>(true);
+            }
+            else if (b.gameObject.name == "Btn_SelectBoy")
+            {
+                btnSelectBoyImage = b.GetComponent<Image>();
+                btnSelectBoyText = b.GetComponentInChildren<Text>(true);
+            }
+
+            if (b.onClick.GetPersistentEventCount() > 0) continue;
+
             switch (b.gameObject.name)
             {
                 case "Btn_MulaiSimulasi":
@@ -146,38 +197,29 @@ public class MainMenuManager : MonoBehaviour
             }
         }
 
-        if (sliderBGM != null)
+        if (sliderBGM != null && sliderBGM.onValueChanged.GetPersistentEventCount() == 0)
         {
             sliderBGM.onValueChanged.RemoveListener(OnBGMChanged);
             sliderBGM.onValueChanged.AddListener(OnBGMChanged);
         }
-        if (sliderSFX != null)
+        if (sliderSFX != null && sliderSFX.onValueChanged.GetPersistentEventCount() == 0)
         {
             sliderSFX.onValueChanged.RemoveListener(OnSFXChanged);
             sliderSFX.onValueChanged.AddListener(OnSFXChanged);
         }
         if (toggleVoiceOver != null)
         {
-            toggleVoiceOver.onValueChanged.RemoveListener(OnVoiceOverChanged);
-            toggleVoiceOver.onValueChanged.AddListener(OnVoiceOverChanged);
-        }
-
-        // Auto-assign elemen kartu karakter jika belum terhubung
-        if (btnSelectBoyImage == null || btnSelectGirlImage == null)
-        {
-            Button[] allBtns = GetComponentsInChildren<Button>(true);
-            foreach (var b in allBtns)
+            if (toggleVoiceOverBg == null) toggleVoiceOverBg = toggleVoiceOver.GetComponent<Image>();
+            if (toggleVoiceOverText == null) toggleVoiceOverText = toggleVoiceOver.GetComponentInChildren<Text>(true);
+            if (toggleVoiceOverCheckIcon == null)
             {
-                if (b.gameObject.name == "Btn_SelectBoy")
-                {
-                    btnSelectBoyImage = b.GetComponent<Image>();
-                    btnSelectBoyText = b.GetComponentInChildren<Text>();
-                }
-                else if (b.gameObject.name == "Btn_SelectGirl")
-                {
-                    btnSelectGirlImage = b.GetComponent<Image>();
-                    btnSelectGirlText = b.GetComponentInChildren<Text>();
-                }
+                Transform tChk = toggleVoiceOver.transform.Find("CheckIcon");
+                if (tChk != null) toggleVoiceOverCheckIcon = tChk.gameObject;
+            }
+            if (toggleVoiceOver.onValueChanged.GetPersistentEventCount() == 0)
+            {
+                toggleVoiceOver.onValueChanged.RemoveListener(OnVoiceOverChanged);
+                toggleVoiceOver.onValueChanged.AddListener(OnVoiceOverChanged);
             }
         }
     }
@@ -186,6 +228,28 @@ public class MainMenuManager : MonoBehaviour
     {
         PlayerPrefs.SetInt("VoiceOver_Enabled", isOn ? 1 : 0);
         PlayerPrefs.Save();
+        UpdateVoiceOverVisual(isOn);
+    }
+
+    private void UpdateVoiceOverVisual(bool isOn)
+    {
+        Color greenPill = new Color(0.13f, 0.77f, 0.36f);
+        Color offPill = new Color(0.88f, 0.90f, 0.93f);
+        Color darkText = new Color(0.12f, 0.16f, 0.22f);
+
+        if (toggleVoiceOverBg != null)
+        {
+            toggleVoiceOverBg.color = isOn ? greenPill : offPill;
+        }
+        if (toggleVoiceOverText != null)
+        {
+            toggleVoiceOverText.text = isOn ? "AKTIF" : "MATI";
+            toggleVoiceOverText.color = isOn ? Color.white : darkText;
+        }
+        if (toggleVoiceOverCheckIcon != null)
+        {
+            toggleVoiceOverCheckIcon.SetActive(isOn);
+        }
     }
 
     #region Panel Navigation
@@ -194,6 +258,7 @@ public class MainMenuManager : MonoBehaviour
     {
         PlayClick();
         ShowOnlyPanel(panelCharacterSelect);
+        UpdateCharacterSelectionVisuals();
     }
 
     public void BackToMainMenu()
@@ -207,6 +272,11 @@ public class MainMenuManager : MonoBehaviour
         PlayClick();
         ShowOnlyPanel(panelNameInput);
 
+        if (VoiceOverManager.Instance != null && VoiceOverManager.Instance.voNamaKamuSiapa != null)
+        {
+            VoiceOverManager.Instance.PlayVO(VoiceOverManager.Instance.voNamaKamuSiapa, false);
+        }
+
         if (inputPlayerName != null)
         {
             inputPlayerName.ActivateInputField();
@@ -217,12 +287,22 @@ public class MainMenuManager : MonoBehaviour
     {
         PlayClick();
         ShowOnlyPanel(panelCharacterSelect);
+        UpdateCharacterSelectionVisuals();
     }
 
     public void OpenSettings()
     {
         PlayClick();
-        if (panelSettings != null) panelSettings.SetActive(true);
+        if (panelSettings != null)
+        {
+            panelSettings.SetActive(true);
+            panelSettings.transform.SetAsLastSibling();
+            foreach (Transform child in panelSettings.transform)
+            {
+                child.gameObject.SetActive(true);
+            }
+        }
+        LoadSettings();
     }
 
     public void CloseSettings()
@@ -235,7 +315,15 @@ public class MainMenuManager : MonoBehaviour
     public void OpenTutorial()
     {
         PlayClick();
-        if (panelTutorial != null) panelTutorial.SetActive(true);
+        if (panelTutorial != null)
+        {
+            panelTutorial.SetActive(true);
+            panelTutorial.transform.SetAsLastSibling();
+            foreach (Transform child in panelTutorial.transform)
+            {
+                child.gameObject.SetActive(true);
+            }
+        }
     }
 
     public void CloseTutorial()
@@ -262,6 +350,14 @@ public class MainMenuManager : MonoBehaviour
         if (panelNameInput != null) panelNameInput.SetActive(panelNameInput == target);
         if (panelTutorial != null) panelTutorial.SetActive(false);
         if (panelSettings != null) panelSettings.SetActive(false);
+
+        if (target != null && (target == panelCharacterSelect || target == panelNameInput))
+        {
+            foreach (Transform child in target.transform)
+            {
+                child.gameObject.SetActive(true);
+            }
+        }
     }
 
     #endregion
@@ -287,6 +383,20 @@ public class MainMenuManager : MonoBehaviour
     public void SelectGirl()
     {
         PlayClick();
+        if (lockGirlCharacter)
+        {
+            selectedGender = "Boy";
+            PlayerPrefs.SetString("PlayerGender", "Boy");
+            PlayerPrefs.Save();
+            UpdateCharacterSelectionVisuals();
+            if (textCharacterNotice != null)
+            {
+                textCharacterNotice.text = "Karakter Putri dikunci sementara untuk perbaikan model 3D.";
+                textCharacterNotice.color = new Color(0.96f, 0.62f, 0.04f);
+            }
+            return;
+        }
+
         selectedGender = "Girl";
         PlayerPrefs.SetString("PlayerGender", "Girl");
         PlayerPrefs.Save();
@@ -302,13 +412,14 @@ public class MainMenuManager : MonoBehaviour
 
     private void UpdateCharacterSelectionVisuals()
     {
-        bool isBoy = selectedGender == "Boy";
+        bool isBoy = lockGirlCharacter || selectedGender == "Boy";
         Color greenColor = new Color(0.13f, 0.77f, 0.36f); // #22C55E
         Color whiteColor = Color.white;
-        Color normalOutline = new Color(0.12f, 0.16f, 0.22f); // #1F2937
+        Color normalOutline = new Color(0.75f, 0.80f, 0.86f);
         Color darkTextColor = new Color(0.12f, 0.16f, 0.22f);
+        Color lockedBg = new Color(0.89f, 0.91f, 0.94f);
+        Color lockedText = new Color(0.45f, 0.50f, 0.58f);
 
-        // Update Outline Kartu (Hijau jika terpilih, Netral jika tidak)
         if (cardBoyOutline != null)
         {
             cardBoyOutline.effectColor = isBoy ? greenColor : normalOutline;
@@ -316,16 +427,22 @@ public class MainMenuManager : MonoBehaviour
         }
         if (cardGirlOutline != null)
         {
-            // Karakter cewe ketika terpilih juga BERWARNA HIJAU (bukan merah/pink)
-            cardGirlOutline.effectColor = !isBoy ? greenColor : normalOutline;
-            cardGirlOutline.effectDistance = !isBoy ? new Vector2(4.5f, -4.5f) : new Vector2(3f, -3f);
+            cardGirlOutline.effectColor = (!lockGirlCharacter && !isBoy) ? greenColor : normalOutline;
+            cardGirlOutline.effectDistance = (!lockGirlCharacter && !isBoy) ? new Vector2(4.5f, -4.5f) : new Vector2(3f, -3f);
         }
 
-        // Background kartu tetap putih bersih
-        if (cardBoyBg != null) cardBoyBg.color = Color.white;
-        if (cardGirlBg != null) cardGirlBg.color = Color.white;
+        if (cardBoyBorderImage != null)
+        {
+            cardBoyBorderImage.color = isBoy ? greenColor : normalOutline;
+        }
+        if (cardGirlBorderImage != null)
+        {
+            cardGirlBorderImage.color = (!lockGirlCharacter && !isBoy) ? greenColor : normalOutline;
+        }
 
-        // Tombol Pilih Boy
+        if (cardBoyBg != null) cardBoyBg.color = Color.white;
+        if (cardGirlBg != null) cardGirlBg.color = lockGirlCharacter ? new Color(0.96f, 0.97f, 0.98f) : Color.white;
+
         if (btnSelectBoyImage != null)
         {
             btnSelectBoyImage.color = isBoy ? greenColor : whiteColor;
@@ -333,22 +450,27 @@ public class MainMenuManager : MonoBehaviour
         if (btnSelectBoyText != null)
         {
             btnSelectBoyText.color = isBoy ? Color.white : darkTextColor;
-            btnSelectBoyText.text = isBoy ? "PILIH SAYA ✓" : "PILIH SAYA";
+            btnSelectBoyText.text = "PILIH SAYA";
         }
 
-        // Tombol Pilih Girl (Hijau saat dipilih, putih saat tidak)
+        Button girlBtn = btnSelectGirlImage != null ? btnSelectGirlImage.GetComponent<Button>() : null;
+        if (girlBtn != null)
+        {
+            girlBtn.interactable = !lockGirlCharacter;
+        }
         if (btnSelectGirlImage != null)
         {
-            btnSelectGirlImage.color = !isBoy ? greenColor : whiteColor;
+            btnSelectGirlImage.color = lockGirlCharacter ? lockedBg : (!isBoy ? greenColor : whiteColor);
         }
         if (btnSelectGirlText != null)
         {
-            btnSelectGirlText.color = !isBoy ? Color.white : darkTextColor;
-            btnSelectGirlText.text = !isBoy ? "PILIH SAYA ✓" : "PILIH SAYA";
+            btnSelectGirlText.color = lockGirlCharacter ? lockedText : (!isBoy ? Color.white : darkTextColor);
+            btnSelectGirlText.text = lockGirlCharacter ? "TERKUNCI" : "PILIH SAYA";
         }
 
         if (badgeBoySelected != null) badgeBoySelected.SetActive(isBoy);
-        if (badgeGirlSelected != null) badgeGirlSelected.SetActive(!isBoy);
+        if (badgeGirlSelected != null) badgeGirlSelected.SetActive(!lockGirlCharacter && !isBoy);
+        if (badgeGirlLocked != null) badgeGirlLocked.SetActive(lockGirlCharacter);
     }
 
     #endregion
@@ -365,12 +487,14 @@ public class MainMenuManager : MonoBehaviour
             playerName = inputPlayerName.text.Trim();
         }
 
+        string effectiveGender = lockGirlCharacter ? "Boy" : selectedGender;
+
         // Simpan nama player dan gender ke PlayerPrefs
         PlayerPrefs.SetString("PlayerName", playerName);
-        PlayerPrefs.SetString("PlayerGender", selectedGender);
+        PlayerPrefs.SetString("PlayerGender", effectiveGender);
         PlayerPrefs.Save();
 
-        Debug.Log($"[MainMenu] Mulai Simulasi untuk Player: '{playerName}' ({selectedGender})");
+        Debug.Log($"[MainMenu] Mulai Simulasi untuk Player: '{playerName}' ({effectiveGender})");
 
         // Muat scene simulasi
         string targetScene = simulationSceneName;
@@ -392,12 +516,15 @@ public class MainMenuManager : MonoBehaviour
 
     public void OnBGMChanged(float val)
     {
+        PlayerPrefs.SetFloat("BGM_Volume", val);
         if (textBGMValue != null) textBGMValue.text = $"{Mathf.RoundToInt(val * 100)}%";
     }
 
     public void OnSFXChanged(float val)
     {
+        PlayerPrefs.SetFloat("SFX_Volume", val);
         if (textSFXValue != null) textSFXValue.text = $"{Mathf.RoundToInt(val * 100)}%";
+        if (SoundManager.Instance != null) SoundManager.Instance.RefreshVolumes();
     }
 
     private void SaveSettings()
@@ -406,6 +533,7 @@ public class MainMenuManager : MonoBehaviour
         if (sliderSFX != null) PlayerPrefs.SetFloat("SFX_Volume", sliderSFX.value);
         if (toggleVoiceOver != null) PlayerPrefs.SetInt("VoiceOver_Enabled", toggleVoiceOver.isOn ? 1 : 0);
         PlayerPrefs.Save();
+        if (SoundManager.Instance != null) SoundManager.Instance.RefreshVolumes();
     }
 
     private void LoadSettings()
@@ -414,9 +542,10 @@ public class MainMenuManager : MonoBehaviour
         float sfx = PlayerPrefs.GetFloat("SFX_Volume", 0.85f);
         bool vo = PlayerPrefs.GetInt("VoiceOver_Enabled", 1) == 1;
 
-        if (sliderBGM != null) { sliderBGM.value = bgm; OnBGMChanged(bgm); }
-        if (sliderSFX != null) { sliderSFX.value = sfx; OnSFXChanged(sfx); }
-        if (toggleVoiceOver != null) toggleVoiceOver.isOn = vo;
+        if (sliderBGM != null) { sliderBGM.SetValueWithoutNotify(bgm); OnBGMChanged(bgm); }
+        if (sliderSFX != null) { sliderSFX.SetValueWithoutNotify(sfx); OnSFXChanged(sfx); }
+        if (toggleVoiceOver != null) { toggleVoiceOver.SetIsOnWithoutNotify(vo); }
+        UpdateVoiceOverVisual(vo);
     }
 
     private void PlayClick()

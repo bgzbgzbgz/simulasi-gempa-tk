@@ -14,6 +14,7 @@ public class MissionUI : MonoBehaviour
     public Text timerText;
     public Slider holdProgressSlider;
     public GameObject holdProgressContainer;
+    public Text holdProgressText;
 
     [Header("HUD Bu Guru (Voice Over)")]
     public RectTransform buGuruHUD;
@@ -30,6 +31,9 @@ public class MissionUI : MonoBehaviour
     public Slider pauseBgmSlider;
     public Slider pauseSfxSlider;
     public Toggle pauseVoiceOverToggle;
+    public Image pauseVoiceOverBg;
+    public Text pauseVoiceOverText;
+    public GameObject pauseVoiceOverCheckIcon;
     public Slider pauseCameraDistanceSlider;
     public Text pauseCameraDistanceValueText;
 
@@ -43,6 +47,7 @@ public class MissionUI : MonoBehaviour
     public GameObject finalScorePanel;
     public Text scoreTimeText;
     public Text scoreStarsText;
+    public Image[] finalScoreStarImages = new Image[3];
     public Text scorePointsText;
     public Text scoreEvaluationText;
     public Text scorePillar1Text;
@@ -58,9 +63,30 @@ public class MissionUI : MonoBehaviour
         if (holdProgressContainer != null) holdProgressContainer.SetActive(false);
         if (pausePanel != null) pausePanel.SetActive(false);
 
+        if (holdProgressText == null && holdProgressContainer != null)
+        {
+            holdProgressText = holdProgressContainer.transform.Find("HoldLabel")?.GetComponent<Text>();
+        }
+
+        if (buGuruHUD != null && buGuruSpeechText == null)
+        {
+            buGuruSpeechText = (buGuruHUD.Find("SpeechText") ?? buGuruHUD.Find("StatusTxt"))?.GetComponent<Text>();
+        }
+
+        if (finalScorePanel != null && (finalScoreStarImages == null || finalScoreStarImages.Length != 3 || finalScoreStarImages[0] == null))
+        {
+            finalScoreStarImages = new Image[3];
+            for (int i = 0; i < 3; i++)
+            {
+                Transform tStar = finalScorePanel.transform.Find($"Card/StarsRow/Star_{i}");
+                if (tStar != null) finalScoreStarImages[i] = tStar.GetComponent<Image>();
+            }
+        }
+
         // Wiring Tombol Level Complete
         if (nextLevelButton != null)
         {
+            nextLevelButton.onClick.RemoveAllListeners();
             nextLevelButton.onClick.AddListener(() =>
             {
                 if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
@@ -71,6 +97,7 @@ public class MissionUI : MonoBehaviour
         // Wiring Tombol Skor Akhir
         if (retryButton != null)
         {
+            retryButton.onClick.RemoveAllListeners();
             retryButton.onClick.AddListener(() =>
             {
                 if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
@@ -80,6 +107,7 @@ public class MissionUI : MonoBehaviour
 
         if (mainMenuButton != null)
         {
+            mainMenuButton.onClick.RemoveAllListeners();
             mainMenuButton.onClick.AddListener(() =>
             {
                 if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
@@ -100,20 +128,21 @@ public class MissionUI : MonoBehaviour
             if (tBtn != null) pauseButton = tBtn.GetComponent<Button>();
         }
 
-        if (pauseButton != null)
+        if (pauseButton != null && pauseButton.onClick.GetPersistentEventCount() == 0)
         {
-            pauseButton.onClick.RemoveListener(OpenPauseMenu);
+            pauseButton.onClick.RemoveAllListeners();
             pauseButton.onClick.AddListener(OpenPauseMenu);
         }
 
         if (resumeButton != null)
         {
-            resumeButton.onClick.RemoveListener(ClosePauseMenu);
+            resumeButton.onClick.RemoveAllListeners();
             resumeButton.onClick.AddListener(ClosePauseMenu);
         }
 
         if (pauseRetryButton != null)
         {
+            pauseRetryButton.onClick.RemoveAllListeners();
             pauseRetryButton.onClick.AddListener(() =>
             {
                 if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
@@ -124,11 +153,61 @@ public class MissionUI : MonoBehaviour
 
         if (pauseMainMenuButton != null)
         {
+            pauseMainMenuButton.onClick.RemoveAllListeners();
             pauseMainMenuButton.onClick.AddListener(() =>
             {
                 if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
                 Time.timeScale = 1f;
                 if (GameManager.Instance != null) GameManager.Instance.GoToMainMenu();
+            });
+        }
+
+        if (pauseBgmSlider != null)
+        {
+            pauseBgmSlider.minValue = 0f;
+            pauseBgmSlider.maxValue = 1f;
+            pauseBgmSlider.SetValueWithoutNotify(PlayerPrefs.GetFloat("BGM_Volume", 0.7f));
+            pauseBgmSlider.onValueChanged.RemoveAllListeners();
+            pauseBgmSlider.onValueChanged.AddListener(val =>
+            {
+                PlayerPrefs.SetFloat("BGM_Volume", val);
+                PlayerPrefs.Save();
+            });
+        }
+
+        if (pauseSfxSlider != null)
+        {
+            pauseSfxSlider.minValue = 0f;
+            pauseSfxSlider.maxValue = 1f;
+            pauseSfxSlider.SetValueWithoutNotify(PlayerPrefs.GetFloat("SFX_Volume", 0.85f));
+            pauseSfxSlider.onValueChanged.RemoveAllListeners();
+            pauseSfxSlider.onValueChanged.AddListener(val =>
+            {
+                PlayerPrefs.SetFloat("SFX_Volume", val);
+                PlayerPrefs.Save();
+                if (SoundManager.Instance != null) SoundManager.Instance.RefreshVolumes();
+            });
+        }
+
+        if (pauseVoiceOverToggle != null)
+        {
+            if (pauseVoiceOverBg == null) pauseVoiceOverBg = pauseVoiceOverToggle.GetComponent<Image>();
+            if (pauseVoiceOverText == null) pauseVoiceOverText = pauseVoiceOverToggle.GetComponentInChildren<Text>(true);
+            if (pauseVoiceOverCheckIcon == null)
+            {
+                Transform tChk = pauseVoiceOverToggle.transform.Find("CheckIcon");
+                if (tChk != null) pauseVoiceOverCheckIcon = tChk.gameObject;
+            }
+            bool voOn = PlayerPrefs.GetInt("VoiceOver_Enabled", 1) == 1;
+            pauseVoiceOverToggle.SetIsOnWithoutNotify(voOn);
+            UpdatePauseVOToggleVisual(voOn);
+            pauseVoiceOverToggle.onValueChanged.RemoveAllListeners();
+            pauseVoiceOverToggle.onValueChanged.AddListener(isOn =>
+            {
+                PlayerPrefs.SetInt("VoiceOver_Enabled", isOn ? 1 : 0);
+                PlayerPrefs.Save();
+                UpdatePauseVOToggleVisual(isOn);
+                if (!isOn && VoiceOverManager.Instance != null) VoiceOverManager.Instance.StopVO();
             });
         }
 
@@ -150,6 +229,19 @@ public class MissionUI : MonoBehaviour
             pauseCameraDistanceSlider.onValueChanged.RemoveListener(OnCameraDistanceSliderChanged);
             pauseCameraDistanceSlider.onValueChanged.AddListener(OnCameraDistanceSliderChanged);
         }
+    }
+
+    private void UpdatePauseVOToggleVisual(bool isOn)
+    {
+        if (pauseVoiceOverBg != null)
+            pauseVoiceOverBg.color = isOn ? new Color(0.13f, 0.77f, 0.36f) : new Color(0.88f, 0.90f, 0.93f);
+        if (pauseVoiceOverText != null)
+        {
+            pauseVoiceOverText.text = isOn ? "AKTIF" : "MATI";
+            pauseVoiceOverText.color = isOn ? Color.white : new Color(0.12f, 0.16f, 0.22f);
+        }
+        if (pauseVoiceOverCheckIcon != null)
+            pauseVoiceOverCheckIcon.SetActive(isOn);
     }
 
     private void Update()
@@ -175,6 +267,14 @@ public class MissionUI : MonoBehaviour
     public void OpenPauseMenu()
     {
         if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+        if (pauseBgmSlider != null) pauseBgmSlider.SetValueWithoutNotify(PlayerPrefs.GetFloat("BGM_Volume", 0.7f));
+        if (pauseSfxSlider != null) pauseSfxSlider.SetValueWithoutNotify(PlayerPrefs.GetFloat("SFX_Volume", 0.85f));
+        if (pauseVoiceOverToggle != null)
+        {
+            bool voOn = PlayerPrefs.GetInt("VoiceOver_Enabled", 1) == 1;
+            pauseVoiceOverToggle.SetIsOnWithoutNotify(voOn);
+            UpdatePauseVOToggleVisual(voOn);
+        }
         if (pauseCameraDistanceSlider != null)
         {
             ThirdPersonCamera tpc = ThirdPersonCamera.Instance ?? Camera.main?.GetComponent<ThirdPersonCamera>();
@@ -190,6 +290,7 @@ public class MissionUI : MonoBehaviour
         if (pausePanel != null)
         {
             pausePanel.SetActive(true);
+            pausePanel.transform.SetAsLastSibling();
             Time.timeScale = 0f; // Jeda gameplay
         }
     }
@@ -251,6 +352,11 @@ public class MissionUI : MonoBehaviour
         {
             holdProgressSlider.value = Mathf.Clamp01(current / max);
         }
+
+        if (holdProgressText != null && max > 0f)
+        {
+            holdProgressText.text = $"Bertahan: {Mathf.Min(current, max):F1} / {max:F1} dtk";
+        }
     }
 
     public void ResetHoldProgress()
@@ -276,6 +382,9 @@ public class MissionUI : MonoBehaviour
     {
         if (buGuruHUD == null) return;
 
+        buGuruHUD.gameObject.SetActive(true);
+        buGuruHUD.SetAsLastSibling();
+
         if (buGuruSpeechText != null && !string.IsNullOrEmpty(speechMessage))
         {
             buGuruSpeechText.text = speechMessage;
@@ -290,7 +399,7 @@ public class MissionUI : MonoBehaviour
 
     public void HideBuGuruVoice()
     {
-        if (buGuruHUD == null) return;
+        if (buGuruHUD == null || !buGuruHUD.gameObject.activeInHierarchy) return;
         if (buGuruSlideRoutine != null) StopCoroutine(buGuruSlideRoutine);
         buGuruSlideRoutine = StartCoroutine(SlideBuGuruRoutine(false, 0f));
     }
@@ -300,15 +409,19 @@ public class MissionUI : MonoBehaviour
         float duration = 0.35f;
         float elapsed = 0f;
 
+        float offLeftX = -Mathf.Max(320f, buGuruHUD.sizeDelta.x + 60f);
+        if (slideIn && buGuruHUD.anchoredPosition.x < offLeftX + 10f)
+        {
+            buGuruHUD.anchoredPosition = new Vector2(offLeftX, buGuruHUD.anchoredPosition.y);
+        }
+
         Vector2 startPos = buGuruHUD.anchoredPosition;
-        // Posisi off-screen sebelah kiri (x: -250), posisi aktif (x: 20)
-        Vector2 targetPos = slideIn ? new Vector2(20f, startPos.y) : new Vector2(-260f, startPos.y);
+        Vector2 targetPos = slideIn ? new Vector2(28f, startPos.y) : new Vector2(offLeftX, startPos.y);
 
         while (elapsed < duration)
         {
             elapsed += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
-            // Easing Out Back untuk efek membal/bouncy kartun
             float ease = 1f + 2.70158f * Mathf.Pow(t - 1f, 3f) + 1.70158f * Mathf.Pow(t - 1f, 2f);
             if (!slideIn) ease = Mathf.SmoothStep(0f, 1f, t);
 
@@ -317,7 +430,13 @@ public class MissionUI : MonoBehaviour
         }
         buGuruHUD.anchoredPosition = targetPos;
 
-        if (slideIn && autoHideDelay > 0f)
+        if (!slideIn)
+        {
+            buGuruHUD.gameObject.SetActive(false);
+            yield break;
+        }
+
+        if (autoHideDelay > 0f)
         {
             yield return new WaitForSeconds(autoHideDelay);
             yield return SlideBuGuruRoutine(false, 0f);
@@ -333,6 +452,7 @@ public class MissionUI : MonoBehaviour
         if (levelCompletePanel != null)
         {
             levelCompletePanel.SetActive(true);
+            levelCompletePanel.transform.SetAsLastSibling();
         }
 
         string playerName = PlayerPrefs.GetString("PlayerName", "Ananda");
@@ -365,39 +485,49 @@ public class MissionUI : MonoBehaviour
         if (finalScorePanel != null)
         {
             finalScorePanel.SetActive(true);
+            finalScorePanel.transform.SetAsLastSibling();
         }
-
-        string playerName = PlayerPrefs.GetString("PlayerName", "Ananda");
 
         if (scoreTimeText != null)
         {
             int mins = Mathf.FloorToInt(totalTime / 60f);
             int secs = Mathf.FloorToInt(totalTime % 60f);
-            scoreTimeText.text = $"⏱️ Waktu Selesai: {mins:00}:{secs:00} • Sangat Tanggap & Mandiri";
+            scoreTimeText.text = $"Waktu Selesai: {mins:00}:{secs:00} Detik • Sangat Tanggap & Mandiri";
         }
 
         if (scorePointsText != null)
         {
             string grade = score >= 100 ? "SEMPURNA!" : (score >= 80 ? "SANGAT BAIK!" : "LULUS");
-            scorePointsText.text = $"🏆 TOTAL SKOR KELULUSAN: {score} / 100 ({grade})";
+            scorePointsText.text = $"TOTAL SKOR KELULUSAN: {score} / 100 ({grade})";
         }
 
-        if (scoreStarsText != null)
+        bool hasImageStars = false;
+        if (finalScoreStarImages != null && finalScoreStarImages.Length == 3)
         {
-            string starStr = "";
-            for (int i = 0; i < stars; i++) starStr += "★ ";
-            for (int i = stars; i < 3; i++) starStr += "☆ ";
-            scoreStarsText.text = starStr.Trim();
+            for (int i = 0; i < 3; i++)
+            {
+                if (finalScoreStarImages[i] != null)
+                {
+                    hasImageStars = true;
+                    finalScoreStarImages[i].color = (i < stars) ? new Color(0.98f, 0.75f, 0.14f) : new Color(0.82f, 0.85f, 0.90f);
+                }
+            }
+        }
+
+        if (scoreStarsText != null && !hasImageStars)
+        {
+            scoreStarsText.text = $"PERINGKAT: {stars} / 3 BINTANG";
         }
 
         if (scoreEvaluationText != null)
         {
-            scoreEvaluationText.text = $"Catatan Bu Guru: \"Ananda {playerName} sangat pintar dan mandiri dalam mempraktikkan mitigasi bencana gempa bumi!\"";
+            string playerName = PlayerPrefs.GetString("PlayerName", "Ananda");
+            scoreEvaluationText.text = $"Catatan Bu Guru: \"Ananda {playerName} tanggap dan tertib dalam mitigasi gempa bumi!\"";
         }
 
-        if (scorePillar1Text != null) scorePillar1Text.text = "30 / 30 Poin";
-        if (scorePillar2Text != null) scorePillar2Text.text = "35 / 35 Poin";
-        if (scorePillar3Text != null) scorePillar3Text.text = "35 / 35 Poin";
+        if (scorePillar1Text != null) scorePillar1Text.text = "LEVEL 1: 30/30";
+        if (scorePillar2Text != null) scorePillar2Text.text = "LEVEL 2: 35/35";
+        if (scorePillar3Text != null) scorePillar3Text.text = "LEVEL 3: 35/35";
 
         if (SoundManager.Instance != null)
         {

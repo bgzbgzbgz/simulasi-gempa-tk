@@ -3,7 +3,7 @@
 Setiap kali membuka sesi/chat baru atau ketika user menanyakan progress ("lanjut progress", "sampai mana?", "apa langkah berikutnya?", dsb):
 1. **WAJIB baca file `PROGRESS.md`** di root project sebelum merespons. File ini adalah Single Source of Truth status harian (apa yang baru selesai dan apa target aktif hari ini).
 2. **Cek `git log -n 3 --oneline`** jika perlu memastikan commit atau perubahan file terakhir.
-3. **Baca `GUIDE_UNTUK_AI_v2.md`** jika butuh detail arsitektur kode atau referensi script/tools Editor.
+3. **Inspeksi langsung file `.cs` terkait** di `Assets/Scripts/` (dan Editor tools di `Assets/Scripts/Editor/`) jika butuh detail implementasi terbaru, jangan menebak dari ingatan.
 4. Di akhir setiap sesi kerja atau setelah menyelesaikan suatu task, **perbarui `PROGRESS.md`** agar sesi berikutnya tidak kehilangan konteks.
 
 ---

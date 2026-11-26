@@ -181,7 +181,11 @@ public class AftershockTrigger : MonoBehaviour
         }
 
         // 3. Putar Voice Over jika ada
-        if (voiceOverClip != null)
+        if (VoiceOverManager.Instance != null)
+        {
+            VoiceOverManager.Instance.PlayVO_09b_Level3GempaSusulan();
+        }
+        else if (voiceOverClip != null)
         {
             if (voiceAudioSource == null)
             {
@@ -190,10 +194,11 @@ public class AftershockTrigger : MonoBehaviour
             voiceAudioSource.PlayOneShot(voiceOverClip);
         }
 
-        // 4. Perbarui instruksi di HUD MissionUI
+        // 4. Perbarui instruksi di HUD MissionUI & tampilkan toast Bu Guru
         if (GameManager.Instance != null && GameManager.Instance.missionUI != null)
         {
             GameManager.Instance.missionUI.SetInstruction(aftershockInstruction);
+            GameManager.Instance.missionUI.ShowBuGuruVoice("Gempa Susulan! Merunduk dulu ya!", aftershockDuration);
         }
 
 #if UNITY_ANDROID || UNITY_IOS

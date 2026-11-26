@@ -71,6 +71,11 @@ public class GameManager : MonoBehaviour
             GameObject smObj = new GameObject("SoundManager", typeof(SoundManager));
         }
 
+        if (VoiceOverManager.Instance == null)
+        {
+            GameObject voObj = new GameObject("VoiceOverManager", typeof(VoiceOverManager));
+        }
+
         if (playerBoy == null)
         {
             playerBoy = FindFirstObjectByType<BoyController>();
@@ -157,6 +162,17 @@ public class GameManager : MonoBehaviour
             {
                 deskObj.SetActive(false);
             }
+        }
+
+        // Pasang otomatis AftershockTrigger pada Waypoint lorong jika belum terpasang
+        GameObject wpCorridor = GameObject.Find("WP_03_GangLuar") ?? GameObject.Find("WP_02_PintuKelas");
+        if (wpCorridor != null && wpCorridor.GetComponent<AftershockTrigger>() == null)
+        {
+            AftershockTrigger aft = wpCorridor.AddComponent<AftershockTrigger>();
+            aft.targetLevel = 3;
+            aft.onlyActiveInLevel3 = true;
+            aft.useDistanceCheck = true;
+            aft.triggerRadius = 2.8f;
         }
     }
 
@@ -265,6 +281,7 @@ public class GameManager : MonoBehaviour
             currentLevel = 2; // Langsung ke Level 2 (Gempa) jika opsi kuis dimatikan
             SetPlayerMovementEnabled(true);
             if (SoundManager.Instance != null) SoundManager.Instance.StartEarthquake();
+            if (VoiceOverManager.Instance != null) VoiceOverManager.Instance.PlayVO_07_Level2GempaMulai();
         }
 
         UpdateMissionStatus();
@@ -354,9 +371,14 @@ public class GameManager : MonoBehaviour
         currentLevel++;
         isGameActive = true;
 
-        if (currentLevel == 2 && SoundManager.Instance != null)
+        if (currentLevel == 2)
         {
-            SoundManager.Instance.StartEarthquake();
+            if (SoundManager.Instance != null) SoundManager.Instance.StartEarthquake();
+            if (VoiceOverManager.Instance != null) VoiceOverManager.Instance.PlayVO_07_Level2GempaMulai();
+        }
+        else if (currentLevel == 3)
+        {
+            if (VoiceOverManager.Instance != null) VoiceOverManager.Instance.PlayVO_09a_Level3Mulai();
         }
 
         if (missionUI != null)
@@ -392,6 +414,19 @@ public class GameManager : MonoBehaviour
         if (missionUI != null)
         {
             missionUI.ShowFinalScore(totalElapsedTime, stars, evalText, currentScore);
+        }
+
+        StartCoroutine(PlayEndingSequenceVO());
+    }
+
+    private System.Collections.IEnumerator PlayEndingSequenceVO()
+    {
+        if (VoiceOverManager.Instance != null)
+        {
+            VoiceOverManager.Instance.PlayVO_10_Level3Selesai();
+            float len = VoiceOverManager.Instance.vo10_Level3Selesai != null ? VoiceOverManager.Instance.vo10_Level3Selesai.length : 6.5f;
+            yield return new WaitForSeconds(len + 0.4f);
+            VoiceOverManager.Instance.PlayVO_11_EndingBintang();
         }
     }
 
@@ -435,9 +470,14 @@ public class GameManager : MonoBehaviour
 
     public void RestartGame()
     {
+        Time.timeScale = 1f;
         if (SoundManager.Instance != null)
         {
             SoundManager.Instance.StopEarthquake();
+        }
+        if (VoiceOverManager.Instance != null)
+        {
+            VoiceOverManager.Instance.StopVO();
         }
         Scene currentScene = SceneManager.GetActiveScene();
         SceneManager.LoadScene(currentScene.name);
@@ -445,6 +485,15 @@ public class GameManager : MonoBehaviour
 
     public void GoToMainMenu()
     {
+        Time.timeScale = 1f;
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.StopEarthquake();
+        }
+        if (VoiceOverManager.Instance != null)
+        {
+            VoiceOverManager.Instance.StopVO();
+        }
         if (Application.CanStreamedLevelBeLoaded("MainMenu"))
         {
             SceneManager.LoadScene("MainMenu");
